@@ -1,8 +1,10 @@
 
 
 class Model:
+  
   def __init__(self):
-    pass
+    self.OVERLAID_MASK_PATH = "./mask"
+    self.MODEL_PATH = "./model" 
 
   def preprocess(img):
     pass
@@ -13,7 +15,7 @@ class Model:
   def get_overlaid_mask(img, binary_mask):
     pass
 
-  def cdf(diameters):
+  def get_volume(img, binary_mask):
     pass
 
   def predict(img):
