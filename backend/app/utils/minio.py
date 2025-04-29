@@ -1,18 +1,20 @@
 from minio import Minio
-import uuid
-from app.models.database import Image
+import os
 
-class MinIOClient:
-  def __init__(self, endpoint: str, access_key: str, secret_key: str, bucket_name: str):
-    pass
+# MinIO client configuration
+MINIO_URL = os.getenv("MINIO_URL", "http://minio:9000")
+MINIO_ROOT_USER = os.getenv("MINIO_ROOT_USER", "minioadmin")
+MINIO_ROOT_PASSWORD = os.getenv("MINIO_ROOT_PASSWORD", "minioadmin")
+BUCKET_NAME = os.getenv("BUCKET_NAME", "tesing")
 
-  def upload_image(self, user_id: uuid.UUID, image_data: bytes, image_id: uuid.UUID) -> str:
-    pass
+# Initialize the MinIO client
+minio_client = Minio(
+    MINIO_URL.replace("http://", "").replace("https://", ""),
+    access_key=MINIO_ROOT_USER,
+    secret_key=MINIO_ROOT_PASSWORD,
+    secure=False,
+)
 
-  def get_presigned_url(self, object_key: str) -> str:
-    pass
-
-  def get_images_from_metadata(self, metadata_list: list[dict]) -> list[Image]:
-    pass
-
-  
+# Ensure the bucket exists
+if not minio_client.bucket_exists(BUCKET_NAME):
+    minio_client.make_bucket(BUCKET_NAME)
