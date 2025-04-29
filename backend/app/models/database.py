@@ -3,7 +3,6 @@ from datetime import datetime
 import os
 
 DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@db:5432/mydatabase")
-print(DATABASE_URL)
 
 engine = create_engine(DATABASE_URL)
 
@@ -34,3 +33,10 @@ class ImageMetadata(SQLModel, table=True):
     user_id: int = Field(foreign_key="user.id", nullable=False)  
 
     user: "User" = Relationship(back_populates="images")
+
+class Prediction(SQLModel, table=True):
+    id: int = Field(foreign_key="imagemetadata.id", primary_key=True) 
+    update_time: datetime = Field(default_factory=datetime.now(), primary_key=True) 
+    binary_mask_key: str = Field(nullable=False)  
+    volumes_key: str = Field(nullable=False)  
+    has_calibrated: bool = Field(nullable=False)  
