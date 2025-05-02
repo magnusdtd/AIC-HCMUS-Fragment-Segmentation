@@ -1,5 +1,6 @@
-import os, requests, tarfile, base64
+import os, base64
 from ultralytics import YOLO
+from huggingface_hub import hf_hub_download
 import numpy as np
 import cv2
 from PIL import Image
@@ -7,80 +8,56 @@ from io import BytesIO
 from random import randint
 
 class Model:
-  def __init__(self):
-    # Set your Kaggle username and API key
-    KAGGLE_USERNAME = os.getenv("KAGGLE_USERNAME", "<your-username>")
-    KAGGLE_KEY = os.getenv("KAGGLE_KEY", "<your-kaggle-key")
-    KAGGLE_URL = os.getenv("KAGGLE_URL", "<your-kaggle-url>")
-    download_path = os.path.expanduser("./model.tar.gz")
-    extract_path = os.path.expanduser("./model_extracted")
+    def __init__(
+        self,
+        repo_id: str = "magnusdtd/aic-hcmus-2025-yolo11m-seg",
+        model_filename: str = "yolov11m_finetuned.pt",
+    ):
+        # Download the model file from Hugging Face Hub
+        self.yolo_path = hf_hub_download(
+            repo_id=repo_id,
+            filename=model_filename,
+            cache_dir=os.path.expanduser("~/.cache/huggingface/yolo"),
+            force_filename=model_filename
+        )
 
-    # Step 1: Download the file
-    response = requests.get(
-        KAGGLE_URL,
-        auth=(KAGGLE_USERNAME, KAGGLE_KEY),
-        stream=True,
-        allow_redirects=True
-    )
+        # Load the YOLO model
+        self.model = YOLO(self.yolo_path)
+        self.model.info()
+        self.model.to("cpu")
 
-    if response.status_code == 200:
-        with open(download_path, "wb") as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
-        print(f"✅ Model downloaded to {download_path}")
+    def preprocess(self, img):
+        pass
 
-        # Step 2: Extract the .tar.gz file
-        os.makedirs(extract_path, exist_ok=True)
-        with tarfile.open(download_path, "r:gz") as tar:
-            tar.extractall(path=extract_path)
-        print(f"✅ Model extracted to {extract_path}")
+    def postprocess(self, model_result):
+        pass
 
-        # Step 3: Delete the .tar.gz file
-        os.remove(download_path)
-        print(f"🗑️  Removed archive file: {download_path}")
+    def get_overlaid_mask(self, image: Image, binary_masks: np.ndarray):
+        image_array = np.array(image)
+        if image_array.shape[-1] == 4:  # Handle RGBA images
+            image_array = image_array[:, :, :3]
 
-    else:
-        print(f"❌ Failed to download model: {response.status_code}")
-        print(response.text)
+        # Resize binary masks to match the image dimensions
+        resized_masks = [
+            np.array(Image.fromarray(mask.astype(np.uint8)).resize(image.size, Image.NEAREST), dtype=bool)
+            for mask in binary_masks
+        ]
 
+        # Generate random colors for each mask
+        num_masks = len(resized_masks)
+        colors = [tuple(randint(0, 255) for _ in range(3)) for _ in range(num_masks)]
 
-    self.model = YOLO(f"{extract_path}/yolov11m_finetuned.pt")
-    self.model.info()
-    self.model.to("cpu")
+        # Overlay masks on the image
+        overlaid_image = image_array.copy()
+        for mask, color in zip(resized_masks, colors):
+            overlaid_image[mask] = np.array(color, dtype=np.uint8) * 0.5 + overlaid_image[mask] * 0.5
 
-  def preprocess(self, img):
-    pass
-
-  def postprocess(self, model_result):
-    pass
-
-  def get_overlaid_mask(self, image: Image, binary_masks: np.ndarray):
-    image_array = np.array(image)
-    if image_array.shape[-1] == 4:  # Handle RGBA images
-        image_array = image_array[:, :, :3]
-
-    # Resize binary masks to match the image dimensions
-    resized_masks = [
-        np.array(Image.fromarray(mask.astype(np.uint8)).resize(image.size, Image.NEAREST), dtype=bool)
-        for mask in binary_masks
-    ]
-
-    # Generate random colors for each mask
-    num_masks = len(resized_masks)
-    colors = [tuple(randint(0, 255) for _ in range(3)) for _ in range(num_masks)]
-
-    # Overlay masks on the image
-    overlaid_image = image_array.copy()
-    for mask, color in zip(resized_masks, colors):
-        overlaid_image[mask] = np.array(color, dtype=np.uint8) * 0.5 + overlaid_image[mask] * 0.5
-
-    # Convert the overlaid image to base64
-    buffer = BytesIO()
-    Image.fromarray(overlaid_image.astype(np.uint8)).save(buffer, format="PNG")
-    return base64.b64encode(buffer.getvalue()).decode("utf-8")
+        # Convert the overlaid image to base64
+        buffer = BytesIO()
+        Image.fromarray(overlaid_image.astype(np.uint8)).save(buffer, format="PNG")
+        return base64.b64encode(buffer.getvalue()).decode("utf-8")
   
-  def _detect_calibration_object(self, img_rgb):
+    def _detect_calibration_object(self, img_rgb):
         """
         Detect calibration object (usually a red ball) in the image
         
@@ -142,71 +119,71 @@ class Model:
             print(f"Error detecting calibration object: {e}")
             return False, None
 
-  def get_volume(self, img, binary_masks):
-    volumes = []
-    if isinstance(binary_masks, np.ndarray) and binary_masks.ndim > 2:
-        masks_list = [mask.astype(np.uint8) for mask in binary_masks]
-    elif isinstance(binary_masks, list):
-        masks_list = [mask.astype(np.uint8) for mask in binary_masks]
-    else:
-        masks_list = [binary_masks.astype(np.uint8)]
-    
-    for mask in masks_list:
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    def get_volume(self, img, binary_masks):
+        volumes = []
+        if isinstance(binary_masks, np.ndarray) and binary_masks.ndim > 2:
+            masks_list = [mask.astype(np.uint8) for mask in binary_masks]
+        elif isinstance(binary_masks, list):
+            masks_list = [mask.astype(np.uint8) for mask in binary_masks]
+        else:
+            masks_list = [binary_masks.astype(np.uint8)]
         
-        if not contours:
-            volumes.append(0)
-            continue
-        contour = max(contours, key=cv2.contourArea)
-        area = cv2.contourArea(contour)
-        perimeter = cv2.arcLength(contour, True)
-        M = cv2.moments(contour)
-        if M["m00"] == 0:
-            volumes.append(0)
-            continue
+        for mask in masks_list:
+            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            
+            if not contours:
+                volumes.append(0)
+                continue
+            contour = max(contours, key=cv2.contourArea)
+            area = cv2.contourArea(contour)
+            perimeter = cv2.arcLength(contour, True)
+            M = cv2.moments(contour)
+            if M["m00"] == 0:
+                volumes.append(0)
+                continue
+            try:
+                (x, y), (major_axis, minor_axis), angle = cv2.fitEllipse(contour)
+                aspect_ratio = major_axis / minor_axis if minor_axis > 0 else 1 
+                circularity = 4 * np.pi * area / (perimeter * perimeter) if perimeter > 0 else 0
+                equivalent_diameter = np.sqrt(4 * area / np.pi)
+                
+                sphere_volume = (4/3) * np.pi * (equivalent_diameter/2)**3
+                
+                ellipsoid_volume = (4/3) * np.pi * (major_axis/2) * (minor_axis/2) * (minor_axis/2)
+                
+                empirical_volume = area**1.5 * (0.8 + 0.4 * circularity)
+                
+                if circularity > 0.8:  
+                    final_volume = 0.6 * sphere_volume + 0.2 * ellipsoid_volume + 0.2 * empirical_volume
+                elif circularity > 0.5:  
+                    final_volume = 0.3 * sphere_volume + 0.4 * ellipsoid_volume + 0.3 * empirical_volume
+                else: 
+                    final_volume = 0.1 * sphere_volume + 0.5 * ellipsoid_volume + 0.4 * empirical_volume   
+                volumes.append(float(final_volume))
+            except Exception as e:
+                volumes.append(float(area**1.5 * 0.8))
+        
+        return volumes
+
+    async def predict(self, img: Image, conf: float=0.5, iou: float=0.5, save: bool=False):
+        print("Model trying to inference...")
         try:
-            (x, y), (major_axis, minor_axis), angle = cv2.fitEllipse(contour)
-            aspect_ratio = major_axis / minor_axis if minor_axis > 0 else 1 
-            circularity = 4 * np.pi * area / (perimeter * perimeter) if perimeter > 0 else 0
-            equivalent_diameter = np.sqrt(4 * area / np.pi)
+            results = self.model.predict(source=img, conf=conf, iou=iou, save=save)
+            if results[0].masks is None:
+                print("No masks were generated by the model.")
+                return None
+            masks = results[0].masks.data.cpu().numpy()
+
+            print("Mask shape: ", masks.shape)
             
-            sphere_volume = (4/3) * np.pi * (equivalent_diameter/2)**3
-            
-            ellipsoid_volume = (4/3) * np.pi * (major_axis/2) * (minor_axis/2) * (minor_axis/2)
-            
-            empirical_volume = area**1.5 * (0.8 + 0.4 * circularity)
-            
-            if circularity > 0.8:  
-                final_volume = 0.6 * sphere_volume + 0.2 * ellipsoid_volume + 0.2 * empirical_volume
-            elif circularity > 0.5:  
-                final_volume = 0.3 * sphere_volume + 0.4 * ellipsoid_volume + 0.3 * empirical_volume
-            else: 
-                final_volume = 0.1 * sphere_volume + 0.5 * ellipsoid_volume + 0.4 * empirical_volume   
-            volumes.append(float(final_volume))
         except Exception as e:
-            volumes.append(float(area**1.5 * 0.8))
-    
-    return volumes
-
-  async def predict(self, img: Image, conf: float=0.5, iou: float=0.5, save: bool=False):
-    print("Model trying to inference...")
-    try:
-        results = self.model.predict(source=img, conf=conf, iou=iou, save=save)
-        if results[0].masks is None:
-            print("No masks were generated by the model.")
+            print(f"Error during prediction: {e}")
             return None
-        masks = results[0].masks.data.cpu().numpy()
-
-        print("Mask shape: ", masks.shape)
         
-    except Exception as e:
-        print(f"Error during prediction: {e}")
-        return None
-    
-    volumes = self.get_volume(img, masks)
-    is_calibrated = False
-    overlaid_img = self.get_overlaid_mask(img, masks)
-    print("Model inference successfully")
-    return (masks, overlaid_img, volumes, is_calibrated)
+        volumes = self.get_volume(img, masks)
+        is_calibrated = False
+        overlaid_img = self.get_overlaid_mask(img, masks)
+        print("Model inference successfully")
+        return (masks, overlaid_img, volumes, is_calibrated)
 
 model = Model()

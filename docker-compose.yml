@@ -17,10 +17,6 @@ services:
         condition: service_healthy
     networks:
       - app_network  
-    environment:
-      KAGGLE_USERNAME: "magnusdtd"
-      KAGGLE_KEY: "3fbae224a666c4940cfda19ef24cc176"
-      KAGGLE_URL: "https://www.kaggle.com/api/v1/models/magnusdtd/gdgoc_hcmus_aic-yolov11m-ht/pyTorch/default/3/download"
 
   db:
     image: postgres:15-alpine
