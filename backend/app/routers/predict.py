@@ -27,6 +27,14 @@ async def upload_image(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+##############################################################################################################################################################
+# This DO TIEN DAT's task
+# Write test cases for all API endpoints of this app in a folder names "tests" at ROOT_LEVEL.
+# Then complete the following code.
+# The "/upload_predict" endpoint will be used to upload an image, save artifacts and return id task.
+# User will use this id to fetch the prediction.
+
+
 @router.post("/upload_predict")
 async def upload_and_predict(
     file: UploadFile, 
@@ -63,32 +71,12 @@ async def upload_and_predict(
   
 @router.get("/fetch_prediction")
 def fetch_prediction(
-    img_id: int,
-    upload_time: datetime,
+    task_id: int,
     db: Session = Depends(get_session), 
     current_user: dict = Depends(get_current_user)  
 ):
     try:
-        # Query the prediction from the database
-        prediction = db.query(Prediction).filter(
-            Prediction.id == img_id,
-            Prediction.update_time == upload_time
-        ).first()
-
-        if not prediction:
-            raise HTTPException(status_code=404, detail="Prediction not found")
-
-        # Fetch binary masks and volumes from MinIO
-        binary_masks, volumes = fetch_prediction_from_minio(
-            prediction.binary_mask_key, 
-            prediction.volumes_key
-        )
-
-        return {
-            "binary_masks": binary_masks,
-            "volumes": volumes,
-            "is_calibrated": prediction.has_calibrated
-        }
+        pass
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -116,3 +104,6 @@ def get_prediction_metadata(
       pass
   except Exception as e:
       raise Exception(status_code=500, detail=str(e))
+
+
+##############################################################################################################################################################
