@@ -27,4 +27,5 @@ def load_user(
 
     statement = select(User).where(User.username == username)
     user = db.exec(statement).first()
+    
     return user
