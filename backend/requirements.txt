@@ -1,2 +1,12 @@
 fastapi
+uvicorn
 sqlmodel
+passlib
+psycopg2-binary
+python-multipart
+minio
+fastapi-login
+numpy
+ultralytics
+anyio
+orjson

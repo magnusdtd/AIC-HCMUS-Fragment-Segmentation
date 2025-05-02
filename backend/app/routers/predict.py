@@ -5,13 +5,9 @@ from app.models.queries import get_user_by_username, create_img_metadata, create
 from app.utils.model import model
 from sqlmodel import Session
 from datetime import datetime
-from PIL import Image, ImageDraw
-from io import BytesIO
+from PIL import Image
 from app.models.queries import create_prediction
-import base64, io
-from torchvision.utils import draw_segmentation_masks
-import torch
-import numpy as np
+import io
 
 router = APIRouter()
 
@@ -46,74 +42,24 @@ async def upload_and_predict(
         metadata = await create_img_metadata(db, user, file)
 
         # Process the uploaded image
-        image = await _read_and_convert_image(file)
+        file_content = await file.read()
+        image = Image.open(io.BytesIO(file_content)).convert("RGBA")
 
         # Perform prediction using the model
-        binary_masks, volumes, is_calibrated = await model.predict(image, conf=0.5, iou=0.5)
-
-        # Convert volumes (NumPy array) to a list
-        volumes_list = volumes.tolist() if isinstance(volumes, np.ndarray) else volumes
-
-        # Overlay segmentation masks on the image
-        overlaid_image_base64 = _generate_overlaid_image(image, binary_masks)
+        binary_masks, overlaid_img, volumes, is_calibrated = await model.predict(image, conf=0.5, iou=0.5)
 
         # Store prediction in the database
-        await create_prediction(db, metadata.id, binary_masks, volumes_list, is_calibrated)
+        await create_prediction(db, metadata.id, binary_masks, volumes, is_calibrated)
 
         return {
             "message": "Prediction completed successfully",
             "metadata": metadata,
-            "volumes": volumes_list,
-            "overlaid_image": overlaid_image_base64,
+            "volumes": volumes,
+            "overlaid_image": overlaid_img,
             "is_calibrated": is_calibrated 
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-
-async def _read_and_convert_image(file: UploadFile) -> Image.Image:
-    """Read the uploaded file and convert it to a Pillow image."""
-    file_content = await file.read()
-    return Image.open(io.BytesIO(file_content)).convert("RGBA")
-
-
-def _generate_overlaid_image(image: Image.Image, binary_masks: list) -> str:
-    """Generate an overlaid image with segmentation masks and return it as a base64 string."""
-    # Convert the image to a PyTorch tensor
-    image_tensor = torch.tensor(
-        list(image.getdata()), dtype=torch.uint8
-    ).reshape(image.size[1], image.size[0], 4).permute(2, 0, 1)
-
-    # Resize binary masks to match the image dimensions
-    resized_masks = [
-        torch.tensor(
-            np.array(Image.fromarray(mask.astype(np.uint8)).resize(image.size, Image.NEAREST)),
-            dtype=torch.bool
-        )
-        for mask in binary_masks
-    ]
-    masks_tensor = torch.stack(resized_masks)
-
-    # Generate random colors for each mask
-    num_masks = masks_tensor.shape[0]
-    colors = torch.randint(0, 256, (num_masks, 3), dtype=torch.uint8)
-
-    # Draw segmentation masks on the image tensor
-    overlaid_image_tensor = draw_segmentation_masks(
-        image_tensor[:3], 
-        masks_tensor,
-        alpha=0.5,
-        colors=colors.tolist()
-    )
-
-    # Convert the overlaid image tensor back to a Pillow image
-    overlaid_image = Image.fromarray(overlaid_image_tensor.permute(1, 2, 0).numpy(), mode="RGB")
-
-    # Convert the overlaid image to base64
-    buffer = BytesIO()
-    overlaid_image.save(buffer, format="PNG")
-    return base64.b64encode(buffer.getvalue()).decode("utf-8")
-
   
 @router.get("/fetch_prediction")
 def fetch_prediction(
