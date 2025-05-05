@@ -25,15 +25,9 @@ spec:
             cpu: "500m"
         env:
         - name: POSTGRES_USER
-          valueFrom:
-            secretKeyRef:
-              name: app-secrets
-              key: POSTGRES_USER
+          value: "${POSTGRES_USER}"
         - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: app-secrets
-              key: POSTGRES_PASSWORD
+          value: "${POSTGRES_PASSWORD}"
         - name: POSTGRES_DB
           value: "mydatabase"
         - name: PGDATA
@@ -45,7 +39,7 @@ spec:
         - containerPort: 5432
         livenessProbe:
           exec:
-            command: ["pg_isready", "-U", "user", "-d", "mydatabase"]
+            command: ["pg_isready", "-U", "${POSTGRES_USER}", "-d", "mydatabase"]
           initialDelaySeconds: 10
           periodSeconds: 10
       volumes:

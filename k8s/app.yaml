@@ -28,29 +28,17 @@ spec:
         command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
         env:
         - name: POSTGRES_USER
-          valueFrom:
-            secretKeyRef:
-              name: app-secrets
-              key: POSTGRES_USER
+          value: "${POSTGRES_USER}"
         - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: app-secrets
-              key: POSTGRES_PASSWORD
+          value: "${POSTGRES_PASSWORD}"
         - name: DATABASE_URL
           value: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres.aic-hcmus.svc.cluster.local:5432/mydatabase"
         - name: MINIO_URL
           value: "http://minio.aic-hcmus.svc.cluster.local:9000"
         - name: MINIO_ROOT_USER
-          valueFrom:
-            secretKeyRef:
-              name: app-secrets
-              key: MINIO_ROOT_USER
+          value: "${MINIO_ROOT_USER}"
         - name: MINIO_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: app-secrets
-              key: MINIO_ROOT_PASSWORD
+          value: "${MINIO_ROOT_PASSWORD}"
         - name: BUCKET_NAME
           value: "tesing"
 

@@ -59,17 +59,19 @@ jobs:
       run: |
         gcloud components install gke-gcloud-auth-plugin
 
-    # Step 9: Deploy to GKE with sensitive environment variables from GitHub Secrets
+    # Step 9: Export Secrets as Environment Variables
+    - name: Export Secrets as Environment Variables
+      run: |
+        export POSTGRES_USER=${{ secrets.POSTGRES_USER }}
+        export POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+        export MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER }}
+        export MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}
+
+    # Step 10: Deploy to GKE with envsubst
     - name: Deploy to GKE
       run: |
         kubectl apply -f k8s/namespace.yaml
-        kubectl create secret generic app-secrets \
-          --namespace aic-hcmus \
-          --from-literal=POSTGRES_USER=${{ secrets.POSTGRES_USER }} \
-          --from-literal=POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }} \
-          --from-literal=MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER }} \
-          --from-literal=MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}
-        kubectl apply -f k8s/postgres.yaml
-        kubectl apply -f k8s/minio.yaml
-        kubectl apply -f k8s/app.yaml
+        envsubst < k8s/postgres.yaml | kubectl apply -f -
+        envsubst < k8s/minio.yaml | kubectl apply -f -
+        envsubst < k8s/app.yaml | kubectl apply -f -
         kubectl apply -f k8s/nginx.yaml
