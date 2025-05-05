@@ -9,7 +9,12 @@ export default defineConfig({
     tailwindcss()
   ],
   build: {
-    outDir: '../backend/app/build', // Output to FastAPI's expected directory
-    assetsDir: 'static', // Place assets in 'static' folder
+    outDir: 'dist', 
+    assetsDir: 'assets', 
+    emptyOutDir: true, 
+  },
+  base: './', // Use relative paths for assets
+  define: {
+    'process.env.API_BASE_URL': JSON.stringify(process.env.API_BASE_URL || "http://app:8080"),
   },
 })

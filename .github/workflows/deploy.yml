@@ -1,0 +1,64 @@
+name: Build and Deploy to GKE
+
+on:
+  push:
+    branches:
+      - main  
+
+env:
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
+  REGION: asia-southeast1
+  SERVICE_NAME: aic-app
+  API_BASE_URL: ${{ secrets.API_BASE_URL }}
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout source code
+    - name: Checkout source
+      uses: actions/checkout@v3
+
+    # Step 2: Authenticate to Google Cloud
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    # Step 3: Set up Google Cloud SDK
+    - name: Set up Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ secrets.PROJECT_ID }}
+
+    # Step 4: Configure Docker for Google Container Registry (GCR)
+    - name: Configure Docker for GCR
+      run: gcloud auth configure-docker
+
+    # Step 5: Build Docker image
+    - name: Build Docker image
+      run: |
+        docker build -t gcr.io/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest .
+
+    # Step 6: Push Docker image to GCR
+    - name: Push Docker image to GCR
+      run: |
+        docker push gcr.io/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest
+
+    # Step 7: Get GKE Cluster Credentials
+    - name: Get GKE Cluster Credentials
+      run: |
+        gcloud container clusters get-credentials ${{ env.CLUSTER_NAME }} \
+          --region ${{ env.REGION }} \
+          --project ${{ secrets.PROJECT_ID }}
+
+    # Step 8: Deploy to GKE
+    - name: Deploy to GKE
+      run: |
+        kubectl apply -f k8s/namespace.yaml
+        kubectl apply -f k8s/postgres.yaml
+        kubectl apply -f k8s/minio.yaml
+        kubectl apply -f k8s/app.yaml
+        kubectl apply -f k8s/nginx.yaml
