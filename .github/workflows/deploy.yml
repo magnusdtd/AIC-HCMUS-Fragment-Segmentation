@@ -59,7 +59,12 @@ jobs:
       run: |
         gcloud components install gke-gcloud-auth-plugin
 
-    # Step 9: Deploy to GKE
+    # Step 9: Replace image name in app.yaml
+    - name: Replace image name in app.yaml
+      run: |
+        sed -i "s|\${{ secrets.PROJECT_ID }}|${{ secrets.PROJECT_ID }}|g" k8s/app.yaml
+
+    # Step 10: Deploy to GKE
     - name: Deploy to GKE
       run: |
         kubectl apply -f k8s/namespace.yaml

@@ -52,6 +52,7 @@ metadata:
   name: postgres-pvc
   namespace: aic-hcmus
 spec:
+  storageClassName: standard-retain 
   accessModes:
   - ReadWriteOnce
   resources:
