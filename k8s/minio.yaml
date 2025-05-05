@@ -57,7 +57,7 @@ metadata:
   name: minio-pvc
   namespace: aic-hcmus
 spec:
-  storageClassName: standard-retain 
+  storageClassName: standard
   accessModes:
   - ReadWriteOnce
   resources:
