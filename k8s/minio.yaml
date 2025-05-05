@@ -23,9 +23,15 @@ spec:
         - ":9001"
         env:
         - name: MINIO_ROOT_USER
-          value: "minioadmin"
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: MINIO_ROOT_USER
         - name: MINIO_ROOT_PASSWORD
-          value: "minioadmin"
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: MINIO_ROOT_PASSWORD
         resources:
           requests:
             memory: "256Mi"

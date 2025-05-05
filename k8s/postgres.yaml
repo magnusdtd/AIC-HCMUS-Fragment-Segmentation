@@ -25,9 +25,15 @@ spec:
             cpu: "500m"
         env:
         - name: POSTGRES_USER
-          value: "user"
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: POSTGRES_USER
         - name: POSTGRES_PASSWORD
-          value: "password"
+          valueFrom:
+            secretKeyRef:
+              name: app-secrets
+              key: POSTGRES_PASSWORD
         - name: POSTGRES_DB
           value: "mydatabase"
         - name: PGDATA
