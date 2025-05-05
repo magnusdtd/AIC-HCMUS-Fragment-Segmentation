@@ -9,7 +9,7 @@ env:
   PROJECT_ID: ${{ secrets.PROJECT_ID }}
   CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
   REGION: ${{ secrets.REGION }}
-  SERVICE_NAME: aic-app
+  SERVICE_NAME: app
   API_BASE_URL: ${{ secrets.API_BASE_URL }}
 
 jobs:
@@ -53,8 +53,13 @@ jobs:
         gcloud container clusters get-credentials ${{ env.CLUSTER_NAME }} \
           --region ${{ env.REGION }} \
           --project ${{ secrets.PROJECT_ID }}
+        
+    # Step 8: Install gke-gcloud-auth-plugin
+    - name: Install gke-gcloud-auth-plugin
+      run: |
+        gcloud components install gke-gcloud-auth-plugin
 
-    # Step 8: Deploy to GKE
+    # Step 9: Deploy to GKE
     - name: Deploy to GKE
       run: |
         kubectl apply -f k8s/namespace.yaml
