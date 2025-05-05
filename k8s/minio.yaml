@@ -26,6 +26,13 @@ spec:
           value: "minioadmin"
         - name: MINIO_ROOT_PASSWORD
           value: "minioadmin"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
         volumeMounts:
         - name: minio-data
           mountPath: /data
