@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 
-const API_BASE_URL = process.env.API_BASE_URL || "http://app:8080";
+const API_BASE_URL = "http://aic-hcmus-noobers.duckdns.org/"
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,

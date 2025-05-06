@@ -40,8 +40,6 @@ jobs:
     # Step 5: Build Docker image
     - name: Build Docker image
       run: |
-        echo "API_BASE_URL=${{ env.API_BASE_URL }}" >> $GITHUB_ENV
-        echo "API_BASE_URL=${{ secrets.API_BASE_URL }}" >> $GITHUB_ENV
         docker build -t gcr.io/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest .
 
     # Step 6: Push Docker image to GCR

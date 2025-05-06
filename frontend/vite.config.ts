@@ -13,8 +13,5 @@ export default defineConfig({
     assetsDir: 'assets', 
     emptyOutDir: true, 
   },
-  base: './', // Use relative paths for assets
-  define: {
-    'process.env.API_BASE_URL': JSON.stringify(process.env.API_BASE_URL || "http://app:8080"),
-  },
+  base: './', 
 })
