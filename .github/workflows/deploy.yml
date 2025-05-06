@@ -40,11 +40,15 @@ jobs:
     # Step 5: Build Docker image
     - name: Build Docker image
       run: |
+        echo "API_BASE_URL=${{ env.API_BASE_URL }}" >> $GITHUB_ENV
+        echo "API_BASE_URL=${{ secrets.API_BASE_URL }}" >> $GITHUB_ENV
         docker build -t gcr.io/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest .
+
     # Step 6: Push Docker image to GCR
     - name: Push Docker image to GCR
       run: |
         docker push gcr.io/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest
+
     # Step 7: Get GKE Cluster Credentials
     - name: Get GKE Cluster Credentials
       run: |
@@ -56,6 +60,7 @@ jobs:
     - name: Install gke-gcloud-auth-plugin
       run: |
         gcloud components install gke-gcloud-auth-plugin
+
     # Step 9: Deploy to GKE
     - name: Deploy to GKE
       run: |
