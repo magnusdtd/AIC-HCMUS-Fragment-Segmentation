@@ -41,12 +41,10 @@ jobs:
     - name: Build Docker image
       run: |
         docker build -t gcr.io/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest .
-
     # Step 6: Push Docker image to GCR
     - name: Push Docker image to GCR
       run: |
         docker push gcr.io/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest
-
     # Step 7: Get GKE Cluster Credentials
     - name: Get GKE Cluster Credentials
       run: |
@@ -58,20 +56,11 @@ jobs:
     - name: Install gke-gcloud-auth-plugin
       run: |
         gcloud components install gke-gcloud-auth-plugin
-
-    # Step 9: Export Secrets as Environment Variables
-    - name: Export Secrets as Environment Variables
-      run: |
-        export POSTGRES_USER=${{ secrets.POSTGRES_USER }}
-        export POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
-        export MINIO_ROOT_USER=${{ secrets.MINIO_ROOT_USER }}
-        export MINIO_ROOT_PASSWORD=${{ secrets.MINIO_ROOT_PASSWORD }}
-
-    # Step 10: Deploy to GKE with envsubst
+    # Step 9: Deploy to GKE
     - name: Deploy to GKE
       run: |
         kubectl apply -f k8s/namespace.yaml
-        envsubst < k8s/postgres.yaml | kubectl apply -f -
-        envsubst < k8s/minio.yaml | kubectl apply -f -
-        envsubst < k8s/app.yaml | kubectl apply -f -
+        kubectl apply -f k8s/postgres.yaml
+        kubectl apply -f k8s/minio.yaml
+        kubectl apply -f k8s/app.yaml
         kubectl apply -f k8s/nginx.yaml

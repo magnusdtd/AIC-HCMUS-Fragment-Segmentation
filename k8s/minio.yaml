@@ -23,9 +23,11 @@ spec:
         - ":9001"
         env:
         - name: MINIO_ROOT_USER
-          value: "${MINIO_ROOT_USER}"
+          value: "minioadmin"
         - name: MINIO_ROOT_PASSWORD
-          value: "${MINIO_ROOT_PASSWORD}"
+          value: "minioadmin"
+        - name: BUCKET_NAME
+          value: "testing"
         resources:
           requests:
             memory: "256Mi"
