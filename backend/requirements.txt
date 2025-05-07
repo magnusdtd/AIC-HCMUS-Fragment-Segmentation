@@ -12,3 +12,5 @@ ultralytics
 anyio
 orjson
 huggingface_hub
+celery
+redis
