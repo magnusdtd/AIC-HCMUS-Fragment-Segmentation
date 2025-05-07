@@ -4,8 +4,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    volumes:
-      - ./backend/app:/app/app
     ports:
       - "8080:8080"  
     command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
@@ -17,7 +15,7 @@ services:
     networks:
       - app_network  
     environment:
-      API_BASE_URL: http://app:8080
+      API_BASE_URL: http://localhost:8080
 
   db:
     image: postgres:15-alpine
