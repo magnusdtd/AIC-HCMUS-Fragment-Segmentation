@@ -16,6 +16,10 @@ services:
       - app_network  
     environment:
       API_BASE_URL: http://localhost:8080
+      DATABASE_URL: postgresql://user:password@db:5432/mydatabase
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      BUCKET_NAME: testing
 
   db:
     image: postgres:15-alpine

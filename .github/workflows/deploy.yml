@@ -30,8 +30,6 @@ jobs:
         MINIO_PASSWORD: ${{ secrets.MINIO_PASSWORD }}
         BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
       run: |
-        sed -i "s/{{DB_USER}}/$DB_USER/g" k8s/app.yaml
-        sed -i "s/{{DB_PASSWORD}}/$DB_PASSWORD/g" k8s/app.yaml
         sed -i "s/{{MINIO_USER}}/$MINIO_USER/g" k8s/app.yaml
         sed -i "s/{{MINIO_PASSWORD}}/$MINIO_PASSWORD/g" k8s/app.yaml
         sed -i "s/{{BUCKET_NAME}}/$BUCKET_NAME/g" k8s/app.yaml
