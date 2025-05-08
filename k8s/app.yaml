@@ -18,26 +18,25 @@ spec:
         image: gcr.io/aic-hcmus/app:latest
         resources:
           requests:
-            memory: "256Mi"
+            memory: "2Gi"
             cpu: "250m"
           limits:
-            memory: "512Mi"
+            memory: "4Gi"
             cpu: "500m"
         ports:
         - containerPort: 8080
         command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
         env:
         - name: DATABASE_URL
-          value: "postgresql://user:password@postgres.aic-hcmus.svc.cluster.local:5432/mydatabase"
+          value: "postgresql://{{DB_USER}}:{{DB_PASSWORD}}@postgres.aic-hcmus.svc.cluster.local:5432/mydatabase"
         - name: MINIO_URL
           value: "http://minio.aic-hcmus.svc.cluster.local:9000"
         - name: MINIO_ROOT_USER
-          value: "minioadmin"
+          value: "{{MINIO_USER}}"
         - name: MINIO_ROOT_PASSWORD
-          value: "minioadmin"
+          value: "{{MINIO_PASSWORD}}"
         - name: BUCKET_NAME
-          value: "testing"
-
+          value: "{{BUCKET_NAME}}"
 ---
 apiVersion: v1
 kind: Service

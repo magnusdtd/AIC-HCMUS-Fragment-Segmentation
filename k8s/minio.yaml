@@ -23,11 +23,11 @@ spec:
         - ":9001"
         env:
         - name: MINIO_ROOT_USER
-          value: "minioadmin"
+          value: "{{MINIO_USER}}"
         - name: MINIO_ROOT_PASSWORD
-          value: "minioadmin"
+          value: "{{MINIO_PASSWORD}}"
         - name: BUCKET_NAME
-          value: "testing"
+          value: "{{BUCKET_NAME}}"
         resources:
           requests:
             memory: "256Mi"
@@ -51,7 +51,6 @@ spec:
       - name: minio-data
         persistentVolumeClaim:
           claimName: minio-pvc
-
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -65,7 +64,6 @@ spec:
   resources:
     requests:
       storage: 1Gi
-
 ---
 apiVersion: v1
 kind: Service

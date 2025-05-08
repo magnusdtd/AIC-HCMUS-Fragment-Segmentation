@@ -25,9 +25,9 @@ spec:
             cpu: "500m"
         env:
         - name: POSTGRES_USER
-          value: "user"
+          value: "{{DB_USER}}"
         - name: POSTGRES_PASSWORD
-          value: "password"
+          value: "{{DB_PASSWORD}}"
         - name: POSTGRES_DB
           value: "mydatabase"
         - name: PGDATA
@@ -46,7 +46,6 @@ spec:
       - name: postgres-data
         persistentVolumeClaim:
           claimName: postgres-pvc
-
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -54,13 +53,12 @@ metadata:
   name: postgres-pvc
   namespace: aic-hcmus
 spec:
-  storageClassName: standard 
+  storageClassName: standard
   accessModes:
   - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
-
 ---
 apiVersion: v1
 kind: Service
