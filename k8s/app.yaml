@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app
+  namespace: aic-hcmus
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: app
+  template:
+    metadata:
+      labels:
+        app: app
+    spec:
+      containers:
+      - name: app
+        image: gcr.io/aic-hcmus/app:latest
+        resources:
+          requests:
+            memory: "2Gi"
+            cpu: "250m"
+          limits:
+            memory: "8Gi"
+            cpu: "500m"
+        ports:
+        - containerPort: 8080
+        command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://user:password@postgres.aic-hcmus.svc.cluster.local:5432/mydatabase"
+        - name: MINIO_URL
+          value: "http://minio.aic-hcmus.svc.cluster.local:9000"
+        - name: MINIO_ROOT_USER
+          value: "{{MINIO_USER}}"
+        - name: MINIO_ROOT_PASSWORD
+          value: "{{MINIO_PASSWORD}}"
+        - name: BUCKET_NAME
+          value: "{{BUCKET_NAME}}"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: app
+  namespace: aic-hcmus
+spec:
+  ports:
+  - port: 8080
+    targetPort: 8080
+  selector:
+    app: app

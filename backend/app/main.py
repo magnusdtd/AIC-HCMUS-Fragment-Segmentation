@@ -34,7 +34,8 @@ app.include_router(predict_router, prefix="/api", tags=["predict"])
 app.include_router(display_img_router, prefix="/api", tags=["display_images"])
 
 # Serve static React files
-app.mount("/static", StaticFiles(directory="app/build/static"), name="static")
+
+app.mount("/assets", StaticFiles(directory="app/build/assets"))
 
 @app.get("/")
 def serve_react():

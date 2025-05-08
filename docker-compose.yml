@@ -2,11 +2,8 @@ services:
   app:
     image: app
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
-    volumes:
-      - ./backend/app:/app/app
-      - ./backend/app/build:/app/build
     ports:
       - "8080:8080"
     command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
@@ -16,7 +13,13 @@ services:
       minio:
         condition: service_healthy
     networks:
-      - app_network
+      - app_network  
+    environment:
+      API_BASE_URL: http://localhost:8080
+      DATABASE_URL: postgresql://user:password@db:5432/mydatabase
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      BUCKET_NAME: testing
 
   db:
     image: postgres:15-alpine
