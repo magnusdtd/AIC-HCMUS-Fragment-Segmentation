@@ -1,0 +1,87 @@
+name: Build and Deploy to GKE
+
+on:
+  push:
+    branches:
+      - deploy  
+
+env:
+  PROJECT_ID: ${{ secrets.PROJECT_ID }}
+  CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
+  REGION: ${{ secrets.REGION }}
+  SERVICE_NAME: app
+  API_BASE_URL: ${{ secrets.API_BASE_URL }}
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout source code
+    - name: Checkout source
+      uses: actions/checkout@v3
+
+    # Step 2: Replace placeholders in YAML files
+    - name: Replace placeholders in YAML files
+      env:
+        DB_USER: ${{ secrets.DB_USER }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+        MINIO_USER: ${{ secrets.MINIO_USER }}
+        MINIO_PASSWORD: ${{ secrets.MINIO_PASSWORD }}
+        BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
+      run: |
+        sed -i "s/{{MINIO_USER}}/$MINIO_USER/g" k8s/app.yaml
+        sed -i "s/{{MINIO_PASSWORD}}/$MINIO_PASSWORD/g" k8s/app.yaml
+        sed -i "s/{{BUCKET_NAME}}/$BUCKET_NAME/g" k8s/app.yaml
+        sed -i "s/{{DB_USER}}/$DB_USER/g" k8s/postgres.yaml
+        sed -i "s/{{DB_PASSWORD}}/$DB_PASSWORD/g" k8s/postgres.yaml
+        sed -i "s/{{MINIO_USER}}/$MINIO_USER/g" k8s/minio.yaml
+        sed -i "s/{{MINIO_PASSWORD}}/$MINIO_PASSWORD/g" k8s/minio.yaml
+        sed -i "s/{{BUCKET_NAME}}/$BUCKET_NAME/g" k8s/minio.yaml
+
+    # Step 3: Authenticate to Google Cloud
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+    # Step 4: Set up Google Cloud SDK
+    - name: Set up Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ secrets.PROJECT_ID }}
+
+    # Step 5: Configure Docker for Google Container Registry (GCR)
+    - name: Configure Docker for GCR
+      run: gcloud auth configure-docker
+
+    # Step 6: Build Docker image
+    - name: Build Docker image
+      run: |
+        docker build -t gcr.io/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest .
+
+    # Step 7: Push Docker image to GCR
+    - name: Push Docker image to GCR
+      run: |
+        docker push gcr.io/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest
+
+    # Step 8: Get GKE Cluster Credentials
+    - name: Get GKE Cluster Credentials
+      run: |
+        gcloud container clusters get-credentials ${{ env.CLUSTER_NAME }} \
+          --region ${{ env.REGION }} \
+          --project ${{ secrets.PROJECT_ID }}
+        
+    # Step 9: Install gke-gcloud-auth-plugin
+    - name: Install gke-gcloud-auth-plugin
+      run: |
+        gcloud components install gke-gcloud-auth-plugin
+
+    # Step 10: Deploy to GKE
+    - name: Deploy to GKE
+      run: |
+        kubectl apply -f k8s/namespace.yaml
+        kubectl apply -f k8s/postgres.yaml
+        kubectl apply -f k8s/minio.yaml
+        kubectl apply -f k8s/app.yaml
+        kubectl apply -f k8s/nginx.yaml

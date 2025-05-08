@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+sqlmodel
+passlib
+psycopg2-binary
+python-multipart
+minio
+fastapi-login
+numpy
+torch
+ultralytics
+anyio
+orjson
+huggingface_hub
