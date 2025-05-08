@@ -2,10 +2,10 @@ from minio import Minio
 import os
 
 # MinIO client configuration
-MINIO_URL = os.getenv("MINIO_URL", "http://minio:9000")
-MINIO_ROOT_USER = os.getenv("MINIO_ROOT_USER", "minioadmin")
-MINIO_ROOT_PASSWORD = os.getenv("MINIO_ROOT_PASSWORD", "minioadmin")
-BUCKET_NAME = os.getenv("BUCKET_NAME", "tesing")
+MINIO_URL = os.getenv("MINIO_URL")
+MINIO_ROOT_USER = os.getenv("MINIO_ROOT_USER")
+MINIO_ROOT_PASSWORD = os.getenv("MINIO_ROOT_PASSWORD")
+BUCKET_NAME = os.getenv("BUCKET_NAME")
 
 # Initialize the MinIO client
 minio_client = Minio(
