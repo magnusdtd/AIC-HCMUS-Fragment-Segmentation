@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 
-const API_BASE_URL = "http://aic-hcmus-noobers.duckdns.org/"
+const API_BASE_URL = "http://localhost:80"
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,

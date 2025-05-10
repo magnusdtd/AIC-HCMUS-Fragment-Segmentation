@@ -19,6 +19,7 @@ class User(SQLModel, table=True):
     password: str = Field(nullable=False)
 
     images: list["ImageMetadata"] = Relationship(back_populates="user")
+    tasks: list["UserTask"] = Relationship(back_populates="user")
 
 class LoginRequest(SQLModel):
     username: str
@@ -34,9 +35,17 @@ class ImageMetadata(SQLModel, table=True):
 
     user: "User" = Relationship(back_populates="images")
 
+class UserTask(SQLModel, table=True):
+    id: int = Field(default=None, primary_key=True)
+    task_id: str = Field(nullable=False, unique=True)
+    img_id: int = Field(foreign_key="imagemetadata.id", nullable=False)
+    user_id: int = Field(foreign_key="user.id", nullable=False)
+    created_at: datetime = Field(default_factory=datetime.now)
+
+    user: "User" = Relationship(back_populates="tasks")
+
 class Prediction(SQLModel, table=True):
-    id: int = Field(foreign_key="imagemetadata.id", primary_key=True) 
-    update_time: datetime = Field(default_factory=datetime.now(), primary_key=True) 
-    binary_mask_key: str = Field(nullable=False)  
-    volumes_key: str = Field(nullable=False)  
-    has_calibrated: bool = Field(nullable=False)  
+    task_id: str = Field(foreign_key="usertask.task_id", primary_key=True)
+    mask_key: str = Field(nullable=False)  
+    metrics_key: str = Field(nullable=False)  
+    is_calibrated: bool = Field(nullable=False)  

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Depends, Response
 from app.models.database import User, get_session
-from app.models.queries import get_user_image_by_user_id, get_user_by_username
+from app.models.queries import get_user_image_by_user_id, get_user_by_username, get_img_from_minio
 from app.routers.auth import get_current_user
-from app.utils.minio import minio_client, BUCKET_NAME
+from app.utils.minio import minio_client, IMG_BUCKET
 from sqlmodel import Session
 from mimetypes import guess_type
 
@@ -35,11 +35,9 @@ def get_user_images(
 @router.get("/fetch_image/{filename}")
 def fetch_image(filename: str):
     try:
-        # Fetch the image from MinIO
-        response = minio_client.get_object(BUCKET_NAME, filename)
-        
-        # Read the image data
-        image_data = response.read()
+        image_data = get_img_from_minio(filename)
+        if image_data is None:
+            raise HTTPException(status_code=404, detail="Image not found")
         
         # Guess the MIME type of the file
         mime_type, _ = guess_type(filename)

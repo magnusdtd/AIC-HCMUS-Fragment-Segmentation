@@ -33,9 +33,7 @@ export default function App() {
             const response = await api.get('/api/auth/current-user', {
               headers: { Authorization: `Bearer ${token}` },
             });
-            console.log('response from server for GET api/auth/current-user: ', response);
             if (response.data.message === "Token is valid") {
-              console.log("Token is valid");
               login(response.data.user);
             }
           } catch (error) {

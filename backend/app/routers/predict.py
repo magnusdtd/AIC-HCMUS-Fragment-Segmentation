@@ -1,14 +1,11 @@
 from fastapi import APIRouter, UploadFile, HTTPException, Depends
-from app.models.database import get_session, Prediction
+from app.models.database import get_session, UserTask
 from app.routers.auth import get_current_user
-from app.models.queries import get_user_by_username, create_img_metadata, create_prediction, fetch_prediction_from_minio
-from app.utils.model import model
+from app.models.queries import get_user_by_username, create_img_metadata, get_user_tasks_by_user_id, create_prediction, get_prediction_from_minio, get_prediction_from_minio, get_img_from_minio, get_img_metadata_by_id, get_user_tasks_by_user_id, get_prediction_by_task_id, create_user_task
 from sqlmodel import Session
-from datetime import datetime
 from PIL import Image
-from app.models.queries import create_prediction
-import io
-from app.tasks import celery_app, predict_task, tolist_safe
+from app.predict.tasks import celery_app, predict_task
+from app.utils.model import Model
 
 router = APIRouter()
 
@@ -28,14 +25,6 @@ async def upload_image(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-##############################################################################################################################################################
-# This DO TIEN DAT's task
-# Write test cases for all API endpoints of this app in a folder names 'tests' at ROOT_LEVEL.
-# Then complete the following code.
-# The '/upload_predict' endpoint will be used to upload an image, save artifacts and return id task.
-# User will use this id to fetch the prediction.
-
-
 @router.post('/upload_predict')
 async def upload_and_predict(
     file: UploadFile,
@@ -43,39 +32,115 @@ async def upload_and_predict(
     current_user: dict = Depends(get_current_user)
 ):
     try:
-        # standard metadata save
+        # Save metadata
         username = current_user['user']
         user = get_user_by_username(db, username)
-        metadata = await create_img_metadata(db, user, file)
+        img_metadata = await create_img_metadata(db, user, file)
 
-        # read bytes
-        await file.seek(0)
+        # Fire Celery task without waiting for the result
         content = await file.read()
+        async_result = predict_task.delay(content)
 
-        # fire-and-wait Celery
-        async_result = predict_task.delay(metadata.id, content)
-        result = async_result.get(timeout=60)   # blocks until worker returns
+        create_user_task(
+            db=db,
+            user_id=user.id,
+            img_metadata_id=img_metadata.id,
+            task_id=async_result.id,
+        )
 
-        return result
+        return {"task_id": async_result.id}
+    
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
   
-@router.get('/fetch_prediction')
-def fetch_prediction(
+@router.get('/task_status/{task_id}')
+def get_task_status(
     task_id: str,
-    db: Session = Depends(get_session), 
-    current_user: dict = Depends(get_current_user)  
+    current_user: dict = Depends(get_current_user)
 ):
     try:
+        print("User trying to get task status")
         result = celery_app.AsyncResult(task_id)
-        if result.state == 'PENDING':
-            return {'status': 'pending'}
-        elif result.state == 'SUCCESS':
-            return {'status': 'success', 'result': result.result}
-        else:
+        return {
+            'status': result.state,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.get('/fetch_prediction/{task_id}')
+def fetch_prediction(
+    task_id: str,
+    db: Session = Depends(get_session),
+    current_user: dict = Depends(get_current_user)
+):
+    print("User trying to get prediction")
+    try:
+        result = celery_app.AsyncResult(task_id)
+        if result.state == 'SUCCESS':
+            task_result = result.result 
+            create_prediction(
+                db=db,
+                task_id=task_id,
+                masks=task_result.get('masks'),
+                metrics=task_result.get('metrics'),
+                is_calibrated=task_result.get('is_calibrated')
+            )
+            response = {
+                'overlaid_image': task_result.get('overlaid_image'),
+                'cdf_chart': task_result.get('cdf_chart'),
+                'is_calibrated': task_result.get('is_calibrated')
+            }
+            result.forget()
+            return {'status': 'success', 'result': response}
+        elif result.state == 'PENDING' or result.state == 'RETRY' or result.state == 'FAILURE':
             return {'status': result.state}
+        else: # if the task is not found in the celery backend
+            userTask = get_user_tasks_by_user_id(db, task_id)
+            if not userTask:
+                raise HTTPException(status_code=404, detail="Task not found")
+            prediction = get_prediction_by_task_id(db, userTask.task_id)
+            if not prediction:
+                raise HTTPException(status_code=404, detail="Prediction not found")
+            img_metadata = get_img_metadata_by_id(db, userTask.img_id)
+            if not img_metadata:
+                raise HTTPException(status_code=404, detail="Image metadata not found")
+            img = get_img_from_minio(img_metadata.filename)
+            if not img:
+                raise HTTPException(status_code=404, detail="Image not found in MinIO")
+
+            masks, metrics = get_prediction_from_minio(prediction.mask_key, prediction.metrics_key)
+            overlaid_image = Model.get_overlaid_mask(img=img, masks=masks)  
+            cdf_chart = Model.draw_cdf_chart(diameters=metrics)
+
+            return {
+                'status': 'success',
+                'result': {
+                    'overlaid_image': overlaid_image,
+                    'cdf_chart': cdf_chart,
+                    'is_calibrated': prediction.is_calibrated,
+                }
+            }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@router.get('/get_user_tasks')
+def get_user_tasks(
+    db: Session = Depends(get_session),
+    current_user: dict = Depends(get_current_user)
+):
+    try:
+        username = current_user['user']
+        user = get_user_by_username(db, username)
+        tasks = get_user_tasks_by_user_id(db, user.id)
+        if not tasks:
+            raise HTTPException(status_code=404, detail="No tasks found for this user")
+        return {
+            'message': 'Fetched user tasks successfully',
+            'tasks': [{'task_id': task.task_id, 'created_at': str(task.created_at)} for task in tasks]
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -86,48 +151,17 @@ def get_prediction(
     current_user: dict = Depends(get_current_user)  
 ):
     try:
-        username = current_user['user']
-        user = get_user_by_username(db, username)
-        metadata = db.query(Prediction).filter(Prediction.img_name == img_name).first()
-        if not metadata:
-            raise HTTPException(status_code=404, detail="Image not found")
-        file_content = fetch_prediction_from_minio(metadata.img_name)
-        image = Image.open(io.BytesIO(file_content)).convert('RGBA')
-        binary_masks, overlaid_img, volumes, is_calibrated = model.predict(image, conf=0.5, iou=0.5)
-        create_prediction(db, metadata.id, binary_masks, volumes, is_calibrated)
-        return {
-            'message': 'Re-prediction completed successfully',
-            'metadata': {
-                'img_name': metadata.img_name,
-                'update_time': str(metadata.update_time)
-            },
-            'volumes': tolist_safe(volumes),
-            # 'overlaid_image': tolist_safe(overlaid_img), 
-            'is_calibrated': is_calibrated
-        }
+        img_metadata = get_img_metadata_by_id(db, img_name)
+        if not img_metadata:
+            raise HTTPException(status_code=404, detail="Image metadata not found")
+        img = get_img_from_minio(img_metadata.filename)
+        if not img:
+            raise HTTPException(status_code=404, detail="Image not found in MinIO")
+    
+        async_result = predict_task.delay(img)
+
+        return {"task_id": async_result.id}
+   
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-  
-@router.get('/get_prediction_metadata')
-def get_prediction_metadata(
-    db: Session = Depends(get_session), 
-    current_user: dict = Depends(get_current_user)  
-):
-    try:
-        username = current_user['user']
-        user = get_user_by_username(db, username)
-        metadata_list = db.query(Prediction).filter(Prediction.user_id == user.id).all()
-        if not metadata_list:
-            raise HTTPException(status_code=404, detail="No images found for this user")
-        result = [
-            {
-                'img_id': m.img_id,
-                'update_time': str(m.update_time)
-            } for m in metadata_list
-        ]
-        return {
-            'message': 'Fetched prediction metadata successfully',
-            'metadata': result
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+

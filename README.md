@@ -21,6 +21,7 @@ This application is a full-stack solution for fragment segmentation, built for t
    - Integrates with **YOLOv11m** for segmentation and volume calculation.
    - Stores metadata and predictions in **PostgreSQL**.
    - Uses **MinIO** for object storage (e.g., images, binary masks).
+   - Uses **Celery** for asynchronous task processing (e.g., running predictions in the background).
 
 3. **Machine Learning**:
    - Utilizes a YOLOv11m segmentation model downloaded from **Hugging Face**.
@@ -31,6 +32,7 @@ This application is a full-stack solution for fragment segmentation, built for t
    - **Docker Compose** for local development.
    - **Kubernetes** manifests for deployment (PostgreSQL, MinIO, app, NGINX).
    - CI/CD pipeline using **GitHub Actions** to build and deploy to **Google Kubernetes Engine (GKE)**.
+   - Uses a Celery worker and **Redis** as the message broker for task queuing.
 
 ---
 
@@ -51,12 +53,14 @@ This application is a full-stack solution for fragment segmentation, built for t
   - `package.json`: Defines dependencies and scripts.
 
 ### Backend (`backend/`)
-- **Core Technologies**: FastAPI, SQLModel, MinIO, YOLOv11m.
+- **Core Technologies**: FastAPI, SQLModel, MinIO, YOLOv11m-seg, Celery.
 - **Key Files**:
   - `app/main.py`: Entry point for the FastAPI app.
   - `app/routers/`: Contains API endpoint routers (e.g., `auth.py`, `predict.py`, `display_img.py`).
   - `app/models/`: Defines database models and queries.
   - `app/utils/`: Includes helper modules for security, MinIO, and YOLO model integration.
+  - `app/predict/tasks.py`: Defines Celery tasks for background processing.
+  - `celery_worker.py`: Entry point for running the Celery worker.
   - `requirements.txt`: Lists Python dependencies.
 
 ### Kubernetes (`k8s/`)
@@ -82,10 +86,11 @@ This application is a full-stack solution for fragment segmentation, built for t
 3. **Production Deployment**:
    - Services are deployed in the `aic-hcmus` namespace.
    - NGINX serves as a reverse proxy for the frontend and backend.
+   - Celery worker and Redis are deployed as part of the Kubernetes manifests.
 
 ---
 
-## Key Endpoints
+## Key Endpoints (Updated)
 ### Backend API
 - **Authentication**:
   - `POST /api/auth/register`: Register a new user.
@@ -96,14 +101,16 @@ This application is a full-stack solution for fragment segmentation, built for t
   - `POST /api/upload_predict`: Upload an image and run prediction.
   - `GET /api/display_images`: Fetch metadata for user-uploaded images.
   - `GET /api/fetch_image/{filename}`: Fetch an image from MinIO.
+  - **NEW**: Background tasks are now handled by Celery for long-running operations like predictions.
 
 ---
 
-## Technologies Used
+## Technologies Used (Updated)
 - **Frontend**: React, TypeScript, TailwindCSS, Vite.
-- **Backend**: FastAPI, SQLModel, MinIO, YOLOv11m.
+- **Backend**: FastAPI, SQLModel, MinIO, YOLOv11m, Celery.
 - **Database**: PostgreSQL.
 - **Storage**: MinIO.
+- **Task Queue**: Celery with Redis as the message broker.
 - **Containerization**: Docker.
 - **Orchestration**: Kubernetes.
 - **CI/CD**: GitHub Actions.

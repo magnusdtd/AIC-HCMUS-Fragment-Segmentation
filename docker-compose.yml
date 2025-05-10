@@ -1,25 +1,25 @@
 services:
   app:
-    image: app
     build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
     depends_on:
       db:
         condition: service_healthy
       minio:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
-      - app_network  
+      - app_network
     environment:
       API_BASE_URL: http://localhost:8080
       DATABASE_URL: postgresql://user:password@db:5432/mydatabase
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
-      BUCKET_NAME: testing
+      MINIO_URL: http://minio:9000
 
   db:
     image: postgres:15-alpine
@@ -72,28 +72,35 @@ services:
 
   celery:
     build:
-      context: ./backend
+      context: .
       dockerfile: Dockerfile
-    command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=1
-    volumes:
-      - ./backend/app:/app/app
+    command: celery -A app.predict.tasks.celery_app worker --loglevel=info --concurrency=1 --without-gossip --without-mingle --without-heartbeat
     depends_on:
       - app
       - redis
     networks:
       - app_network
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.predict.tasks.celery_app", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   redis:
     image: redis:alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
     networks:
       - app_network
 
 volumes:
   postgres_data:
   minio_data:
-
 
 networks:
   app_network:
