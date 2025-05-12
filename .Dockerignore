@@ -1,1 +1,11 @@
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+*.log
+frontend/node_modules
+frontend/.next
+frontend/dist
+backend/.venv
+backend/.mypy_cache
