@@ -9,6 +9,7 @@ from app.routers.display_img import router as display_img_router
 from contextlib import asynccontextmanager
 from fastapi.responses import ORJSONResponse
 import os, anyio
+from prometheus_fastapi_instrumentator import Instrumentator
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -17,8 +18,7 @@ async def lifespan(app: FastAPI):
     limiter.total_tokens = 1000
     yield
 
-app = FastAPI(lifespan=lifespan)
-# app = FastAPI(lifespan=lifespan, default_response_class = ORJSONResponse)
+app = FastAPI(lifespan=lifespan, default_response_class = ORJSONResponse)
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,13 +28,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Initialize Prometheus metrics
+Instrumentator().instrument(app).expose(app)
+
 # Include auth routes, upload routes
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(predict_router, prefix="/api", tags=["predict"])
 app.include_router(display_img_router, prefix="/api", tags=["display_images"])
 
 # Serve static React files
-
 app.mount("/assets", StaticFiles(directory="app/build/assets"))
 
 @app.get("/")

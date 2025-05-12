@@ -6,11 +6,23 @@ psycopg2-binary
 python-multipart
 minio
 fastapi-login
-numpy
-torch
-ultralytics
 anyio
 orjson
 huggingface_hub
 celery
 redis
+prometheus_fastapi_instrumentator
+
+# Ultralytics dependencies
+numpy
+matplotlib
+pandas
+pyyaml
+pillow
+psutil
+requests
+tqdm
+scipy
+seaborn
+ultralytics-thop
+opencv-python-headless

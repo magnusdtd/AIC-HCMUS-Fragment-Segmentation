@@ -45,6 +45,7 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_PROMETHEUS_AUTH_TYPE: public 
     volumes:
       - minio_data:/data
     ports:
@@ -85,7 +86,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
-
+      
   redis:
     image: redis:alpine
     ports:
@@ -95,6 +96,56 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    networks:
+      - app_network
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./grafana/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - app_network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - app_network
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9100:9100"
+    networks:
+      - app_network
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    environment:
+      DATA_SOURCE_NAME: "postgresql://user:password@db:5432/mydatabase?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      - db
+    networks:
+      - app_network
+
+  celery-exporter:
+    image: danihodovic/celery-exporter:latest
+    environment:
+      - CE_BROKER_URL=redis://redis:6379/0
+    ports:
+      - "9808:9808"  
+    depends_on:
+      - redis
     networks:
       - app_network
 
