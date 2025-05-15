@@ -86,6 +86,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 3
+    environment:
+      IS_CELERY_WORKER: true
       
   redis:
     image: redis:alpine

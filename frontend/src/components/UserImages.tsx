@@ -56,11 +56,11 @@ function UserImages() {
   if (error) return <div>{error}</div>;
 
   if (images.length === 0) {
-    return <div>No images found. Start uploading your images!</div>;
+    return <div className='text-center text-2xl font-sans'>No images found. Start uploading your images!</div>;
   }
 
   return (
-    <div>
+    <div className="flex flex-col items-center justify-center min-h-screen">
       <h2 className="text-2xl font-bold mb-4">Your Images</h2>
       <div className="grid grid-cols-3 gap-4">
         {images.map((image, index) => (

@@ -4,8 +4,12 @@ import io, base64
 import numpy as np
 import asyncio, traceback
 from app.utils.model import Model
+import os
 
-model = Model()
+if os.getenv("IS_CELERY_WORKER", "false").lower() == "true":
+    model = Model()
+else:
+    model = None
 
 celery_app = Celery(
     'tasks',
@@ -63,11 +67,4 @@ def predict_task(file_content):
     except Exception as e:
         print("Error in predict_task:", e)
         print(traceback.format_exc())
-        return {
-            "message": "Prediction failed",
-            "masks": "",
-            "overlaid_image": "",
-            "cdf_chart": "",
-            "metrics": [],
-            "is_calibrated": False
-        }
+        raise RuntimeError("Prediction task failed") from e

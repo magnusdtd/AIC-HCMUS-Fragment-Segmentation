@@ -78,8 +78,6 @@ function Predict() {
                 Authorization: `Bearer ${token}`,
               },
             });
-            console.log("Client get the result", resultResponse.data.result);
-
             setOverlaidImage(resultResponse.data.result.overlaid_image);
             setCdfChart(resultResponse.data.result.cdf_chart);
             setIsCalibrated(resultResponse.data.result.is_calibrated);
@@ -97,7 +95,7 @@ function Predict() {
   }, [taskId]);
 
   return (
-    <div>
+    <div className="flex flex-col items-center justify-center min-h-screen">
       <h2 className="text-2xl font-bold mb-4">Predict</h2>
       <form onSubmit={handleUpload}>
         <label

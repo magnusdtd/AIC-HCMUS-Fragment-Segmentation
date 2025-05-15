@@ -18,6 +18,11 @@ class User(SQLModel, table=True):
     username: str = Field(index=True, unique=True, nullable=False)
     password: str = Field(nullable=False)
 
+    google_id: str = Field(index=True, unique=True, nullable=True)  
+    email: str = Field(index=True, unique=True, nullable=True)  
+    full_name: str = Field(nullable=True)  
+    profile_picture: str = Field(nullable=True) 
+
     images: list["ImageMetadata"] = Relationship(back_populates="user")
     tasks: list["UserTask"] = Relationship(back_populates="user")
 
@@ -48,4 +53,4 @@ class Prediction(SQLModel, table=True):
     task_id: str = Field(foreign_key="usertask.task_id", primary_key=True)
     mask_key: str = Field(nullable=False)  
     metrics_key: str = Field(nullable=False)  
-    is_calibrated: bool = Field(nullable=False)  
+    is_calibrated: bool = Field(nullable=False)

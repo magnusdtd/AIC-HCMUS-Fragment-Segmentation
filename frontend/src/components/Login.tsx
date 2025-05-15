@@ -16,7 +16,12 @@ function Login() {
       const response = await api.post<{ access_token: string }>("/api/auth/login", { username, password });
       const { access_token } = response.data;
       localStorage.setItem("token", access_token);
-      login(username);
+
+      const userResponse = await api.get('/api/auth/current-user', {
+        headers: { Authorization: `Bearer ${access_token}` },
+      });
+      login(userResponse.data); 
+
       navigate("/main");
     } catch (error: any) {
       console.error(error);

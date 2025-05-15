@@ -3,9 +3,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from app.models.database import create_db_and_tables
-from app.routers.auth import router as auth_router
-from app.routers.predict import router as predict_router
-from app.routers.display_img import router as display_img_router
+from app.routers.auth import auth_router
+from app.routers.predict import predict_router
+from app.routers.display_img import display_img_router
 from contextlib import asynccontextmanager
 from fastapi.responses import ORJSONResponse
 import os, anyio
@@ -42,10 +42,6 @@ app.mount("/assets", StaticFiles(directory="app/build/assets"))
 @app.get("/")
 def serve_react():
     return FileResponse("app/build/index.html")
-
-@app.get("/api/hello")
-def say_hello():
-    return {"message": "Hello from FastAPI!"}
 
 # Catch-all for React routes (SPA)
 @app.get("/{full_path:path}")
