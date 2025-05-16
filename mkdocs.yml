@@ -1,0 +1,22 @@
+site_name: AIC-HCMUS Fragment Segmentation
+repo_url: https://github.com/your-org/AIC-HCMUS-Fragment-Segmentation
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Architecture: architecture.md
+  - Frontend: frontend.md
+  - Backend: backend.md
+  - Kubernetes & Deployment: deployment.md
+  - API Reference: api.md
+  - License: license.md
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
