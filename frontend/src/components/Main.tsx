@@ -1,27 +1,33 @@
-import Predict from './Predict';
-import UserImages from './UserImages';
-import { Routes, Route, useLocation } from 'react-router-dom';
-import { useUser } from '../context/UserContext';
+import TechStackBar from './ui/tech-stack-bar';
+import { AuroraBackground } from './ui/aurora-background';
+import { motion } from 'motion/react';
+import { TextGenerateEffect } from './ui/text-generate-effect';
 
-function Main() {
-  const { user } = useUser();
-  const location = useLocation();
-
+export default function Main(props: { skills: { name: string; logo: string }[] }) {
   return (
-    <div className="w-full p-6">
-      <Routes>
-        <Route path="predict" element={<Predict />} />
-        <Route path="user-images" element={<UserImages />} />
-      </Routes>
-      {location.pathname !== '/main/predict' && location.pathname !== '/main/user-images' && (
-        <div className="flex items-center justify-center h-screen">
-          <h1 className="text-3xl font-bold">Welcome, {user?.username}!</h1>
-        </div>
-      )}
-    </div>
+    <>
+      <AuroraBackground>
+        <motion.div
+          initial={{ opacity: 0.0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{
+            delay: 0.3,
+            duration: 0.8,
+            ease: 'easeInOut',
+          }}
+          className='relative flex flex-col gap-4 items-center justify-center px-4'
+        >
+          <TextGenerateEffect 
+            words={'GDGoC HCMUS AI Challenge'} 
+            className='text-[120px] font-bold' 
+          />
+          <TextGenerateEffect 
+            words={'Rock Fragment Segmentation App'} 
+            className='text-[60px] font-sans' 
+          />
+        </motion.div>
+      </AuroraBackground>
+      <TechStackBar skills={props.skills} />
+    </>
   );
 }
-
-export default Main;
-
-

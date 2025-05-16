@@ -22,7 +22,7 @@ function Login() {
       });
       login(userResponse.data); 
 
-      navigate("/main");
+      navigate("/predict");
     } catch (error: any) {
       console.error(error);
       setMessage(error.response?.data?.detail || "Login failed");

@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react';
-import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import Login from './components/Login';
 import Register from './components/Register';
-import Main from './components/Main';
+import Predict from './components/Predict';
+import UserImages from './components/UserImages';
 import './App.css';
 import { useUser } from './context/UserContext';
 import { jwtDecode } from 'jwt-decode';
 import api from './services/api';
-import { AuroraBackground } from './components/ui/aurora-background';
-import { motion } from 'motion/react';
-import { TextGenerateEffect } from './components/ui/text-generate-effect';
 import NavBar from './components/ui/nav-bar';
-import TechStackBar from './components/ui/tech-stack-bar';
+import Main from './components/Main';
 
 type DecodedToken = {
   exp?: number; 
@@ -45,11 +43,6 @@ const isTokenExpired = (token: string): boolean => {
     console.error('Failed to decode token: ', error);
     return true;
   }
-};
-
-const TechStackBarWrapper = () => {
-  const location = useLocation();
-  return location.pathname === '/' ? <TechStackBar skills={techSkills} /> : null;
 };
 
 export default function App() {
@@ -93,46 +86,18 @@ export default function App() {
     <Router>
       <NavBar />
       <Routes>
-        <Route
-          path='/'
-          element={
-            <AuroraBackground>
-              <motion.div
-                initial={{ opacity: 0.0, y: 40 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{
-                  delay: 0.3,
-                  duration: 0.8,
-                  ease: 'easeInOut',
-                }}
-                className='relative flex flex-col gap-4 items-center justify-center px-4'
-              >
-                <TextGenerateEffect 
-                  words={'GDGoC HCMUS AI Challenge'} 
-                  className='text-[120px] font-bold' 
-                />
-                <TextGenerateEffect 
-                  words={'Rock Fragment Segmentation App'} 
-                  className='text-[60px] font-sans' 
-                />
-              </motion.div>
-            </AuroraBackground>
-          }
-        />
+        <Route path='/' element={<Main skills={techSkills} />} />
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register />} />
         <Route
-          path='/main/*'
-          element={
-            user ? (
-              <Main />
-            ) : (
-              <Navigate to='/' />
-            )
-          }
+          path='/predict'
+          element={user ? <Predict /> : <Navigate to='/' />}
+        />
+        <Route
+          path='/images'
+          element={user ? <UserImages /> : <Navigate to='/' />}
         />
       </Routes>
-      <TechStackBarWrapper />
     </Router>
   );
 }
