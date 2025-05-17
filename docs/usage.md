@@ -17,17 +17,17 @@ This guide explains how to use the AIC-HCMUS Fragment Segmentation application, 
 ### Using Docker Compose
 
 1. Clone the repository:
-   ```
+   ``` sh
    git clone https://github.com/magnusdtd/AIC-HCMUS-Fragment-Segmentation.git
    cd AIC-HCMUS-Fragment-Segmentation
    ```
 
 2. Start all services:
-   ```
+   ``` sh
    docker-compose up --build
    ```
 
-3. Access the frontend at [http://localhost:80](http://localhost:80)  
+3. Access the frontend at [http://localhost](http://localhost)  
 
 ---
 

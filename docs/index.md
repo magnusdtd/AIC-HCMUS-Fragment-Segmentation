@@ -1,6 +1,6 @@
 # 🚀 AIC-HCMUS Fragment Segmentation
 
-Welcome to **AIC-HCMUS Fragment Segmentation**—your all-in-one solution for analyzing and reconstructing document fragments, archaeological artifacts, and broken objects. Powered by cutting-edge computer vision and deep learning, our platform delivers precise, reliable results for fragment segmentation and volume estimation.
+Welcome to **AIC-HCMUS Fragment Segmentation**—your all-in-one solution for analyzing and reconstructing document fragments and broken objects. Powered by cutting-edge computer vision and deep learning, our platform delivers precise, reliable results for fragment segmentation and volume estimation.
 
 ---
 
@@ -34,4 +34,4 @@ Welcome to **AIC-HCMUS Fragment Segmentation**—your all-in-one solution for an
 
 ## 🗺️ System Architecture
 
-![System Architecture Diagram](asset/diagram.jpg)
+![System Architecture Diagram](assets/diagram.jpg)

@@ -1,23 +1,13 @@
 site_name: AIC-HCMUS Fragment Segmentation
 repo_url: https://github.com/magnusdtd/AIC-HCMUS-Fragment-Segmentation
 theme:
-  logo: asset/ai-made-by-rock-fragment.svg
-  favicon: asset/ai-made-by-rock-fragment.svg
+  logo: assets/ai-made-by-rock-fragment.svg
+  favicon: assets/ai-made-by-rock-fragment.svg
   name: material
   features:
     - content.code.copy
-plugins:
-  - i18n:
-      default_language: en
-      languages:
-        - locale: en
-          name: English
-          default: true
-          build: true
+    - content.code.select
 
-        # - locale: vn
-        #   name: Tiếng Việt
-        #   build: true
 
 nav:
   - Home: index.md
@@ -25,12 +15,30 @@ nav:
   - API: api.md
   - About: about.md
 
+plugins:
+  - i18n:
+      docs_structure: suffix
+      default_language: en
+      languages:
+        - locale: en
+          default: true
+          name: English
+          build: true
 
+        - locale: vi
+          name: Tiếng Việt
+          build: true
+          nav:
+            - Trang chủ: index.vi.md
+            - Sử dụng: usage.vi.md
+            - API: api.vi.md
+            - Giới thiệu: about.vi.md
 
-# nav_translations:
-#   vn:
-#     - Trang chủ: index.md
-#     - Giới thiệu: about.md
-#     - Cài đặt: installation.md
-#     - Sử dụng: usage.md
-#     - API: api.md
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
