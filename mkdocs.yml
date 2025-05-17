@@ -1,6 +1,8 @@
 site_name: AIC-HCMUS Fragment Segmentation
 repo_url: https://github.com/magnusdtd/AIC-HCMUS-Fragment-Segmentation
 theme:
+  logo: asset/ai-made-by-rock-fragment.svg
+  favicon: asset/ai-made-by-rock-fragment.svg
   name: material
   features:
     - content.code.copy

@@ -30,3 +30,8 @@ Welcome to **AIC-HCMUS Fragment Segmentation**—your all-in-one solution for an
 - **Docker Compose** for easy local setup
 - **Kubernetes** manifests for scalable deployment (PostgreSQL, MinIO, app, NGINX)
 - Automated CI/CD with **GitHub Actions**—deploys straight to Google Kubernetes Engine (GKE)
+
+
+## 🗺️ System Architecture
+
+![System Architecture Diagram](asset/diagram.jpg)
