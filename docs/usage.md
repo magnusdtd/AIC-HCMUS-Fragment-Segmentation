@@ -17,18 +17,17 @@ This guide explains how to use the AIC-HCMUS Fragment Segmentation application, 
 ### Using Docker Compose
 
 1. Clone the repository:
-   ```sh
+   ```
    git clone https://github.com/magnusdtd/AIC-HCMUS-Fragment-Segmentation.git
    cd AIC-HCMUS-Fragment-Segmentation
    ```
 
 2. Start all services:
-   ```sh
+   ```
    docker-compose up --build
    ```
 
-3. Access the frontend at [http://localhost:5173](http://localhost:5173)  
-   The backend API runs at [http://localhost:8000](http://localhost:8000)
+3. Access the frontend at [http://localhost:80](http://localhost:80)  
 
 ---
 
@@ -37,26 +36,28 @@ This guide explains how to use the AIC-HCMUS Fragment Segmentation application, 
 ### Backend
 
 1. Install dependencies:
-   ```sh
+   ```
    cd backend
+   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
+   pip install ultralytics --no-deps && \
    pip install -r requirements.txt
    ```
 
 2. Start the FastAPI server:
-   ```sh
+   ```
    uvicorn app.main:app --reload
    ```
 
 ### Frontend
 
 1. Install dependencies:
-   ```sh
+   ```
    cd frontend
    npm install
    ```
 
 2. Start the development server:
-   ```sh
+   ```
    npm run dev
    ```
 

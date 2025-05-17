@@ -8,13 +8,17 @@ Our team consists of passionate students from both the Standard and Artificial I
 
 ### Core Research Team
 
-- **Dam Tien Dat.** - *Project Lead*  
+- **Dam Tien Dat.** - *Project Lead* <br>
+Email: tdat0306@gmail.com
 
-- **Do Tien Dat.** - *Backend Developer*
+- **Do Tien Dat.** - *Backend Developer* <br>
+Email: dotiendat1725@gmail.com
 
-- **Huynh Cung.** - *Frontend Developer*  
+- **Huynh Cung.** - *Frontend Developer* <br>
+Email: cung.h28@gmail.com
 
-- **Nguyen Gia Bao.** - *AI Trainer* 
+- **Nguyen Gia Bao.** - *AI Trainer* <br>
+Email: bao058704@gmail.com
 
 ## Contact
-For research collaborations, please contact us at hcmus.nooobers@gmail.com
+For collaborations, please contact us at hcmus.nooobers@gmail.com

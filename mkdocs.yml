@@ -3,8 +3,7 @@ repo_url: https://github.com/magnusdtd/AIC-HCMUS-Fragment-Segmentation
 theme:
   name: material
   features:
-    - navigation.tabs
-
+    - content.code.copy
 plugins:
   - i18n:
       default_language: en
@@ -23,6 +22,8 @@ nav:
   - Usage: usage.md
   - API: api.md
   - About: about.md
+
+
 
 # nav_translations:
 #   vn:
