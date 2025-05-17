@@ -89,14 +89,8 @@ export default function App() {
         <Route path='/' element={<Main skills={techSkills} />} />
         <Route path='/login' element={<Login />} />
         <Route path='/register' element={<Register />} />
-        <Route
-          path='/predict'
-          element={user ? <Predict /> : <Navigate to='/' />}
-        />
-        <Route
-          path='/images'
-          element={user ? <UserImages /> : <Navigate to='/' />}
-        />
+        <Route path='/predict' element={user ? <Predict /> : <Navigate to='/' />} />
+        <Route path='/images' element={user ? <UserImages /> : <Navigate to='/' />} />
       </Routes>
     </Router>
   );

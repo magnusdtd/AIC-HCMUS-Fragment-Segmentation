@@ -6,10 +6,12 @@ from app.models.database import create_db_and_tables
 from app.routers.auth import auth_router
 from app.routers.predict import predict_router
 from app.routers.display_img import display_img_router
+from app.routers.google_auth import router as google_auth_router
 from contextlib import asynccontextmanager
 from fastapi.responses import ORJSONResponse
 import os, anyio
 from prometheus_fastapi_instrumentator import Instrumentator
+from starlette.middleware.sessions import SessionMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -19,6 +21,11 @@ async def lifespan(app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan, default_response_class = ORJSONResponse)
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv("SESSION_SECRET_KEY", "this_is_a_secret"),
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -35,6 +42,7 @@ Instrumentator().instrument(app).expose(app)
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(predict_router, prefix="/api", tags=["predict"])
 app.include_router(display_img_router, prefix="/api", tags=["display_images"])
+app.include_router(google_auth_router, prefix="/api/auth", tags=["auth"])
 
 # Serve static React files
 app.mount("/assets", StaticFiles(directory="app/build/assets"))

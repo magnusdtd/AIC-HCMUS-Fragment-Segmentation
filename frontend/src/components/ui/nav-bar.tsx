@@ -34,7 +34,7 @@ export default function NavBar() {
           <img src="ai-made-by-rock-fragment.svg" alt="HCMUS AI Challenge" className="h-8" />
           </Link>
             <a
-            href="https://github.com/magnusdtd/AIC-HCMUS-Fragment-Segmentation"
+            href="https://magnusdtd.github.io/AIC-HCMUS-Fragment-Segmentation/"
             className="text-gray-300 hover:text-white"
             target="_blank"
             rel="noopener noreferrer"

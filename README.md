@@ -5,34 +5,44 @@ This application is a full-stack solution for fragment segmentation, built for t
 
 ---
 
+## Architecture
+![App Architecture](frontend/public/app-architecture.jpg)
+
+---
+
 ## Key Features
 1. **Frontend**:
    - Built with **React** and **TypeScript**.
    - Uses **TailwindCSS** for styling.
    - Implements **React Router** for navigation.
    - Provides user authentication (login/register).
-   - Allows users to upload images, view predictions, and visualize results (e.g., overlaid masks, volume data).
+   - Allows users to upload images, view predictions, and visualize results (e.g., overlaid masks, Particle Size Distribution (PSD) data).
    - Includes reusable UI components like `Predict`, `UserImages`, and `Tabs`.
 
 2. **Backend**:
    - Built with **FastAPI**.
    - Handles user authentication with JWT tokens.
    - Provides endpoints for image upload, prediction, and fetching results.
-   - Integrates with **YOLOv11m** for segmentation and volume calculation.
+   - Integrates with **YOLOv11m** for segmentation and particle size calculation.
    - Stores metadata and predictions in **PostgreSQL**.
    - Uses **MinIO** for object storage (e.g., images, binary masks).
-   - Uses **Celery** for asynchronous task processing (e.g., running predictions in the background).
+   - Uses **Celery** for asynchronous task processing (e.g., running predictions in the background) with **Redis** as the message broker.
+   - **Prometheus** is used for monitoring metrics.
+   - **Grafana** is used for dashboard visualization and alerting.
+   - **Grafana alerts** are configured to send notifications to **Discord**.
 
 3. **Machine Learning**:
    - Utilizes a YOLOv11m segmentation model downloaded from **Hugging Face**.
-   - Detects calibration objects (e.g., red balls) for volume estimation.
-   - Generates overlaid masks and calculates object volumes.
+   - Detects calibration objects (e.g., red balls) for particle size estimation.
+   - Generates overlaid masks and calculates object particle sizes.
 
 4. **Infrastructure**:
    - **Docker Compose** for local development.
    - **Kubernetes** manifests for deployment (PostgreSQL, MinIO, app, NGINX).
    - CI/CD pipeline using **GitHub Actions** to build and deploy to **Google Kubernetes Engine (GKE)**.
    - Uses a Celery worker and **Redis** as the message broker for task queuing.
+   - **Prometheus** and **Grafana** for monitoring and alerting.
+   - **DuckDNS** is used to provide a public domain for accessing the application after deployment on Google Cloud.
 
 ---
 
@@ -90,7 +100,7 @@ This application is a full-stack solution for fragment segmentation, built for t
 
 ---
 
-## Key Endpoints (Updated)
+## Key Endpoints
 ### Backend API
 - **Authentication**:
   - `POST /api/auth/register`: Register a new user.
@@ -121,3 +131,5 @@ This application is a full-stack solution for fragment segmentation, built for t
 ## Notes
 - The YOLOv11m model is dynamically downloaded from **Hugging Face** during runtime.
 - The application uses **GNU GPL v3** as its license.
+- **Prometheus** and **Grafana** are used for monitoring and alerting.
+- **DuckDNS** is used to provide a public domain for accessing the application after deployment on Google Cloud.

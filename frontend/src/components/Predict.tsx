@@ -158,7 +158,7 @@ function Predict() {
           {originalImagePreview && (
             <Card sx={{ maxWidth: 512 }}>
               <CardContent>
-                <h3 className="text-xl font-bold">Original Image</h3>
+                <h3 className="text-xl font-bold text-center">Original Image</h3>
                 <img
                   src={originalImagePreview}
                   alt="Original"
@@ -185,7 +185,7 @@ function Predict() {
       {/* Display CDF chart */}
       {cdfChart && (
         <div className="mt-8">
-          <h3 className="text-xl font-bold">Diameter CDF</h3>
+          <h3 className="text-xl font-bold text-center">Diameter CDF</h3>
           <img
             src={`data:image/png;base64,${cdfChart}`}
             alt="CDF Chart"
