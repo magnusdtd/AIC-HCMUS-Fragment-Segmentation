@@ -33,4 +33,4 @@ Chào mừng đến với **Phân Mảnh AIC-HCMUS**—giải pháp tất cả t
 
 ## 🗺️ Kiến Trúc Hệ Thống
 
-![Sơ đồ Kiến trúc Hệ thống](../assets/diagram.jpg)
+![Sơ đồ Kiến trúc Hệ thống](assets/diagram.jpg)
