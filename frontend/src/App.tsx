@@ -76,22 +76,24 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className='flex items-center justify-center h-screen'>
+      <div className='flex items-center justify-center h-screen bg-white text-gray-900 dark:bg-black dark:text-gray-100 transition-colors duration-300'>
         <h1 className='text-2xl font-sans'>Loading...</h1>
       </div>
     );
   }
 
   return (
-    <Router>
-      <NavBar />
-      <Routes>
-        <Route path='/' element={<Main skills={techSkills} />} />
-        <Route path='/login' element={<Login />} />
-        <Route path='/register' element={<Register />} />
-        <Route path='/predict' element={user ? <Predict /> : <Navigate to='/' />} />
-        <Route path='/images' element={user ? <UserImages /> : <Navigate to='/' />} />
-      </Routes>
-    </Router>
+    <div className="min-h-screen bg-white text-gray-900 dark:bg-black dark:text-gray-100 transition-colors duration-300">
+      <Router>
+        <NavBar />
+        <Routes>
+          <Route path='/' element={<Main skills={techSkills} />} />
+          <Route path='/login' element={<Login />} />
+          <Route path='/register' element={<Register />} />
+          <Route path='/predict' element={user ? <Predict /> : <Navigate to='/' />} />
+          <Route path='/images' element={user ? <UserImages /> : <Navigate to='/' />} />
+        </Routes>
+      </Router>
+    </div>
   );
 }

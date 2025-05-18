@@ -11,7 +11,7 @@ export default function Main(props: { skills: { name: string; logo: string }[] }
           initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.8, ease: 'easeInOut' }}
-          className="relative flex flex-col gap-4 items-center justify-center px-4"
+          className="relative flex flex-col gap-4 items-center justify-center px-4 text-gray-900 dark:text-gray-100"
         >
           <TextGenerateEffect
             words="GDGoC HCMUS AI Challenge"
@@ -60,7 +60,7 @@ export default function Main(props: { skills: { name: string; logo: string }[] }
         {/* Left Column: About the App (top), Key Features (bottom) */}
         <motion.div
           whileHover={{ scale: 1.05 }}
-          className="bg-white/80 dark:bg-zinc-800 rounded-xl shadow-lg p-6 flex flex-col md:col-span-1 md:row-span-1 md:row-start-1 md:col-start-1"
+          className="bg-white/80 dark:bg-zinc-800/80 rounded-xl shadow-lg p-6 flex flex-col md:col-span-1 md:row-span-1 md:row-start-1 md:col-start-1"
         >
           <h3 className="text-xl font-bold mb-3">About the App</h3>
           <p className="text-gray-700 dark:text-gray-200 text-sm leading-relaxed">
@@ -70,7 +70,7 @@ export default function Main(props: { skills: { name: string; logo: string }[] }
 
         <motion.div
           whileHover={{ scale: 1.05 }}
-          className="bg-white/80 dark:bg-zinc-800 rounded-xl shadow-lg p-6 flex flex-col justify-between md:col-span-1 md:row-span-1 md:row-start-2 md:col-start-1"
+          className="bg-white/80 dark:bg-zinc-800/80 rounded-xl shadow-lg p-6 flex flex-col justify-between md:col-span-1 md:row-span-1 md:row-start-2 md:col-start-1"
         >
           <h3 className="text-xl font-bold mb-3">Key Features</h3>
           <ul className="list-disc pl-5 text-gray-700 dark:text-gray-200 text-sm space-y-1">
@@ -139,7 +139,7 @@ export default function Main(props: { skills: { name: string; logo: string }[] }
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
           <motion.div
             whileHover={{ scale: 1.05 }}
-            className="bg-white/80 dark:bg-zinc-800 rounded-xl shadow-lg p-6 flex flex-col items-center"
+            className="bg-white/80 dark:bg-zinc-800/80 rounded-xl shadow-lg p-6 flex flex-col items-center"
           >
             <img src="https://avatars.githubusercontent.com/u/139754211?v=4" alt="Member 1" className="w-24 h-24 rounded-full mb-3 border-4 border-red-500" />
             <h3 className="font-bold text-lg">Đàm Tiến Đạt</h3>
@@ -148,7 +148,7 @@ export default function Main(props: { skills: { name: string; logo: string }[] }
           </motion.div>
           <motion.div
             whileHover={{ scale: 1.05 }}
-            className="bg-white/80 dark:bg-zinc-800 rounded-xl shadow-lg p-6 flex flex-col items-center"
+            className="bg-white/80 dark:bg-zinc-800/80 rounded-xl shadow-lg p-6 flex flex-col items-center"
           >
             <img src="https://avatars.githubusercontent.com/u/151555532?v=4" alt="Member 2" className="w-24 h-24 rounded-full mb-3 border-4 border-pink-400" />
             <h3 className="font-bold text-lg">Nguyễn Gia Bảo</h3>
@@ -157,7 +157,7 @@ export default function Main(props: { skills: { name: string; logo: string }[] }
           </motion.div>
           <motion.div
             whileHover={{ scale: 1.05 }}
-            className="bg-white/80 dark:bg-zinc-800 rounded-xl shadow-lg p-6 flex flex-col items-center"
+            className="bg-white/80 dark:bg-zinc-800/80 rounded-xl shadow-lg p-6 flex flex-col items-center"
           >
             <img src="https://avatars.githubusercontent.com/u/192578309?v=4" alt="Member 3" className="w-24 h-24 rounded-full mb-3 border-4 border-green-400" />
             <h3 className="font-bold text-lg">Huỳnh Cung</h3>
@@ -166,7 +166,7 @@ export default function Main(props: { skills: { name: string; logo: string }[] }
           </motion.div>
           <motion.div
             whileHover={{ scale: 1.05 }}
-            className="bg-white/80 dark:bg-zinc-800 rounded-xl shadow-lg p-6 flex flex-col items-center"
+            className="bg-white/80 dark:bg-zinc-800/80 rounded-xl shadow-lg p-6 flex flex-col items-center"
           >
             <img src="https://avatars.githubusercontent.com/u/149289949?v=4" alt="Member 4" className="w-24 h-24 rounded-full mb-3 border-4 border-blue-400" />
             <h3 className="font-bold text-lg">Đỗ Tiến Đạt</h3>

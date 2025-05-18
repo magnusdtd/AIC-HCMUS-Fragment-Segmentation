@@ -24,7 +24,7 @@ const TechStackBar: React.FC<TechStackBarProps> = ({ skills }) => {
           ref={rowRef}
           initial={{ x: 0 }}
           animate={rowWidth ? { x: -rowWidth } : {}}
-          transition={{ repeat: Infinity, repeatType: 'loop', duration: 30, ease: 'linear' }} 
+          transition={{ repeat: Infinity, repeatType: 'loop', duration: 35, ease: 'linear' }} 
           style={{ display: 'flex', whiteSpace: 'nowrap' }}
         >
           {[...skills, ...skills].map((skill, i) => (

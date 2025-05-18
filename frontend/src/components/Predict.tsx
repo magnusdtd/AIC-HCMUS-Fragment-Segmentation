@@ -116,27 +116,27 @@ function Predict() {
   }, [taskId]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen">
-      <h2 className="text-2xl font-bold mb-4">Predict</h2>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-gray-900">
+      <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Predict</h2>
       <form onSubmit={handleUpload}>
         <div
           {...getRootProps()}
-          className={`border-2 border-dashed rounded p-6 mb-4 w-80 flex flex-col items-center justify-center cursor-pointer transition-colors duration-200 ${isDragActive ? 'border-blue-500 bg-blue-50' : 'border-gray-300 bg-white'}`}
+          className={`border-2 border-dashed rounded p-6 mb-4 w-80 flex flex-col items-center justify-center cursor-pointer transition-colors duration-200 ${isDragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-800' : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800'}`}
         >
           <input {...getInputProps()} />
           {isDragActive ? (
-            <p className="text-blue-500">Drop the file here ...</p>
+            <p className="text-blue-500 dark:text-blue-300">Drop the file here ...</p>
           ) : file ? (
-            <p className="text-green-600">Selected: {file.name}</p>
+            <p className="text-green-600 dark:text-green-400">Selected: {file.name}</p>
           ) : (
-            <p>Drag & drop an image here, or click to select a file</p>
+            <p className="text-gray-700 dark:text-gray-200">Drag & drop an image here, or click to select a file</p>
           )}
         </div>
         <div className="flex justify-center items-center gap-4">
           <Tooltip title="Click to run the model and get predictions for your image!" arrow placement="left">
             <button
               type="submit"
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
             >
               Predict
             </button>
@@ -145,12 +145,12 @@ function Predict() {
           {taskStatus && taskStatus !== "SUCCESS" && (
             <div className="flex items-center">
               <CircularProgress size={28} />
-              <span className="ml-2 text-sm text-gray-700">{taskStatus}</span>
+              <span className="ml-2 text-sm text-gray-700 dark:text-gray-200">{taskStatus}</span>
             </div>
           )}
         </div>
       </form>
-      {message && <p className="mt-4 text-red-500">{message}</p>}
+      {message && <p className="mt-4 text-red-500 dark:text-red-400">{message}</p>}
 
       {/* Display original and overlaid images side by side */}
       {(originalImagePreview || overlaidImage) && (
@@ -158,7 +158,7 @@ function Predict() {
           {originalImagePreview && (
             <Card sx={{ maxWidth: 512 }}>
               <CardContent>
-                <h3 className="text-xl font-bold text-center">Original Image</h3>
+                <h3 className="text-xl font-bold text-center text-gray-900 dark:text-black">Your Image</h3>
                 <img
                   src={originalImagePreview}
                   alt="Original"
@@ -170,7 +170,7 @@ function Predict() {
           {overlaidImage && (
             <Card sx={{ maxWidth: 512 }}>
               <CardContent>
-                <h3 className="text-xl font-bold text-center">Overlaid Prediction</h3>
+                <h3 className="text-xl font-bold text-center text-gray-900 dark:text-black">Overlaid Prediction</h3>
                 <img
                   src={`data:image/png;base64,${overlaidImage}`}
                   alt="Overlaid Prediction"
@@ -185,20 +185,20 @@ function Predict() {
       {/* Display CDF chart */}
       {cdfChart && (
         <div className="mt-8">
-          <h3 className="text-xl font-bold text-center">Diameter CDF</h3>
+          <h3 className="text-xl font-bold text-center text-gray-900 dark:text-white">Diameter CDF</h3>
           <img
             src={`data:image/png;base64,${cdfChart}`}
             alt="CDF Chart"
-            className="border p-2"
+            className="border p-2 dark:border-gray-600"
           />
         </div>
       )}
 
       {/* Display whether the image is calibrated or not */}
       {isCalibrated !== null && (
-        <p className="mt-4">
+        <p className="mt-4 text-gray-900 dark:text-white">
           Model Calibration: {" "}
-          <span className={isCalibrated ? "text-green-500" : "text-red-500"}>
+          <span className={isCalibrated ? "text-green-500 dark:text-green-400" : "text-red-500 dark:text-red-400"}>
             {isCalibrated
               ? "This image contains a calibrated object."
               : "There is no calibrated object in this image."}
