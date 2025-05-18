@@ -9,24 +9,23 @@ theme:
     - content.code.copy
     - content.code.select
 
-nav:
-  - Home: index.md
-  - Usage: usage.md
-  - App: app.md
-  - API: api.md
-  - Model: model.md
-  - About: about.md
-
 plugins:
   - i18n:
       docs_structure: suffix
       default_language: en
       languages:
-        en:
+        - locale: en
           default: true
           name: English
           build: true
-        vi:
+          nav:
+            - Home: index.md
+            - Usage: usage.md
+            - App: app.md
+            - API: api.md
+            - Model: model.md
+            - About: about.md
+        - locale: vi
           name: Tiếng Việt
           build: true
           nav:
