@@ -35,7 +35,7 @@ spec:
           value: "{{MINIO_USER}}"
         - name: MINIO_ROOT_PASSWORD
           value: "{{MINIO_PASSWORD}}"
-        - name: BACKEND_URL
+        - name: BASE_URL
           value: "https://localhost:443"
         - name: GOOGLE_CLIENT_ID
           value: "793710439296-m5ufnjhel9fjmkc1g1ua4n6q3ip5hvc4.apps.googleusercontent.com"
@@ -43,8 +43,6 @@ spec:
           value: "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"
         - name: SECRET_KEY
           value: "this_is_a_secret_key"
-        - name: REDIRECT_URL
-          value: "https://localhost:443"
         - name: REDIS_URL
           value: "redis://redis.aic-hcmus-app.svc.cluster.local:6379/0"
 
