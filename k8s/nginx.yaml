@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx
-  namespace: aic-hcmus
+  namespace: aic-hcmus-app
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: nginx:latest
+        image: nginx:alpine
         resources:
           requests:
             memory: "128Mi"
@@ -28,27 +28,37 @@ spec:
           mountPath: /etc/nginx/nginx.conf
           subPath: nginx.conf
         ports:
-        - containerPort: 80
+        - containerPort: 443
+        volumeMounts:
+        - name: nginx-ssl
+          mountPath: /etc/nginx/ssl
       volumes:
       - name: nginx-config
         configMap:
           name: nginx-config
+      - name: nginx-ssl
+        secret:
+          secretName: nginx-ssl
 
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: nginx-config
-  namespace: aic-hcmus
+  namespace: aic-hcmus-app
 data:
   nginx.conf: |
     events {}
 
     http {
         server {
-            listen 80;
+            listen 443 ssl;
+            server_name _;
+            ssl_certificate /etc/nginx/ssl/tls.crt;
+            ssl_certificate_key /etc/nginx/ssl/tls.key;
+            ssl_protocols TLSv1.2 TLSv1.3;
+            ssl_ciphers HIGH:!aNULL:!MD5;
 
-            # Serve other services if needed
             location / {
                 proxy_pass http://app:8080/;
                 proxy_set_header Host $host;
@@ -63,11 +73,11 @@ apiVersion: v1
 kind: Service
 metadata:
   name: nginx
-  namespace: aic-hcmus
+  namespace: aic-hcmus-app
 spec:
   type: LoadBalancer
   ports:
-  - port: 80
-    targetPort: 80
+  - port: 443
+    targetPort: 443
   selector:
     app: nginx

@@ -2,9 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: app
-  namespace: aic-hcmus
+  namespace: aic-hcmus-app
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: app
@@ -30,19 +30,29 @@ spec:
         - name: DATABASE_URL
           value: "postgresql://user:password@postgres.aic-hcmus.svc.cluster.local:5432/mydatabase"
         - name: MINIO_URL
-          value: "http://minio.aic-hcmus.svc.cluster.local:9000"
+          value: "http://minio.aic-hcmus-app.svc.cluster.local:9000"
         - name: MINIO_ROOT_USER
           value: "{{MINIO_USER}}"
         - name: MINIO_ROOT_PASSWORD
           value: "{{MINIO_PASSWORD}}"
-        - name: BUCKET_NAME
-          value: "{{BUCKET_NAME}}"
----
+        - name: BACKEND_URL
+          value: "https://localhost:443"
+        - name: GOOGLE_CLIENT_ID
+          value: "793710439296-m5ufnjhel9fjmkc1g1ua4n6q3ip5hvc4.apps.googleusercontent.com"
+        - name: GOOGLE_CLIENT_SECRET
+          value: "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"
+        - name: SECRET_KEY
+          value: "this_is_a_secret_key"
+        - name: REDIRECT_URL
+          value: "https://localhost:443"
+        - name: REDIS_URL
+          value: "redis://redis.aic-hcmus-app.svc.cluster.local:6379/0"
+
 apiVersion: v1
 kind: Service
 metadata:
   name: app
-  namespace: aic-hcmus
+  namespace: aic-hcmus-app
 spec:
   ports:
   - port: 8080

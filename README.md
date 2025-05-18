@@ -86,7 +86,7 @@ This application is a full-stack solution for fragment segmentation, built for t
 ## Deployment Workflow
 1. **Local Development**:
    - Use `docker-compose.yml` to spin up services locally.
-   - Frontend runs on `http://localhost:3000`, backend on `http://localhost:8080`.
+   - THe app runs on `https://localhost:443`
 
 2. **CI/CD Pipeline**:
    - Triggered on `deploy` branch push.

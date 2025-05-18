@@ -18,11 +18,8 @@ class AuthRouter:
     
     @staticmethod
     def get_current_user(user: User = Depends(manager)):
-        print(f"Inside function 'get_current_user', user type is {type(user)}")
         if not user:
-            print("Token validation failed: User is None")
             raise HTTPException(status_code=401, detail="Invalid or expired token. Please log in again.")
-        print(f"Token validation succeeded. User: {user}")
         return user
 
     def register(self, user: User, db: Session = Depends(get_session)):

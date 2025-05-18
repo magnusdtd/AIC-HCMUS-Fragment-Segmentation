@@ -13,12 +13,12 @@ router = APIRouter()
 # Google OAuth2 config
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8080")
+BACKEND_URL = os.getenv("BACKEND_URL")
 
 config_data = {
     'GOOGLE_CLIENT_ID': GOOGLE_CLIENT_ID,
     'GOOGLE_CLIENT_SECRET': GOOGLE_CLIENT_SECRET,
-    'SECRET_KEY': os.getenv("SECRET_KEY", "supersecret")
+    'SECRET_KEY': os.getenv("SECRET_KEY")
 }
 config = Config(environ=config_data)
 oauth = OAuth(config)
@@ -41,7 +41,6 @@ async def google_login(request: Request):
 async def google_callback(request: Request, db: Session = Depends(get_session)):
     try:
         token = await oauth.google.authorize_access_token(request)
-        print("Token:", token)
         if 'id_token' in token:
             try:
                 # Try passing just the id_token string
@@ -76,5 +75,5 @@ async def google_callback(request: Request, db: Session = Depends(get_session)):
         data={"sub": user.username}
     )
     # Redirect to frontend with token as query param
-    frontend_url = os.getenv("FRONTEND_URL")
+    frontend_url = os.getenv("REDIRECT_URL")
     return RedirectResponse(f"{frontend_url}/login?token={access_token}")

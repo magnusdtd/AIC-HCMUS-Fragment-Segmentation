@@ -15,15 +15,16 @@ services:
     networks:
       - app_network
     environment:
-      API_BASE_URL: http://localhost:8080
       DATABASE_URL: postgresql://user:password@db:5432/mydatabase
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
       MINIO_URL: http://minio:9000
-      BACKEND_URL: http://localhost:8080
+      BACKEND_URL: https://localhost:443
       GOOGLE_CLIENT_ID: 793710439296-m5ufnjhel9fjmkc1g1ua4n6q3ip5hvc4.apps.googleusercontent.com
       GOOGLE_CLIENT_SECRET: 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
-      FRONTEND_URL: http://localhost:80
+      SECRET_KEY: this_is_a_secret_key
+      REDIRECT_URL: https://localhost:443
+      REDIS_URL: redis://redis:6379/0
 
   db:
     image: postgres:15-alpine
@@ -69,7 +70,6 @@ services:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx-ssl:/etc/nginx/ssl:ro
     ports:
-      - "80:80"
       - "443:443"
     depends_on:
       - app
@@ -94,6 +94,7 @@ services:
       retries: 3
     environment:
       IS_CELERY_WORKER: true
+      REDIS_URL: redis://redis:6379/0
       
   redis:
     image: redis:alpine
@@ -152,6 +153,17 @@ services:
       - CE_BROKER_URL=redis://redis:6379/0
     ports:
       - "9808:9808"  
+    depends_on:
+      - redis
+    networks:
+      - app_network
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis://redis:6379
     depends_on:
       - redis
     networks:

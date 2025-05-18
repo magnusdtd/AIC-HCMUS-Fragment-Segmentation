@@ -1,5 +1,5 @@
 global:
-  scrape_interval: 15s
+  scrape_interval: 5s
 
 scrape_configs:
   - job_name: fastapi
@@ -41,3 +41,7 @@ scrape_configs:
   - job_name: celery
     static_configs:
       - targets: ['celery-exporter:9808']
+
+  - job_name: redis-exporter
+    static_configs:
+      - targets: ['redis-exporter:9121']

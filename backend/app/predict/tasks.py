@@ -11,10 +11,12 @@ if os.getenv("IS_CELERY_WORKER", "false").lower() == "true":
 else:
     model = None
 
+REDIS_URL = os.getenv("REDIS_URL")
+
 celery_app = Celery(
     'tasks',
-    broker='redis://redis:6379/0',
-    backend='redis://redis:6379/0',
+    broker=REDIS_URL,
+    backend=REDIS_URL,
     broker_transport_options={'visibility_timeout': 3600},
     result_expires=900 
 )
