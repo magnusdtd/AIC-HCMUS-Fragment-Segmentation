@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: celery
+  namespace: aic-hcmus-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: celery
+  template:
+    metadata:
+      labels:
+        app: celery
+    spec:
+      containers:
+        - name: celery
+          image: gcr.io/aic-hcmus/app:latest
+          command: ["celery", "-A", "app.predict.tasks.celery_app", "worker", "--loglevel=info", "--concurrency=1", "--without-gossip", "--without-mingle", "--without-heartbeat"]
+          env:
+            - name: IS_CELERY_WORKER
+              value: true
+            - name: REDIS_URL
+              value: redis://redis.aic-hcmus-app.svc.cluster.local:6379/0

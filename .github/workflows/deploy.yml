@@ -10,7 +10,6 @@ env:
   CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
   REGION: ${{ secrets.REGION }}
   SERVICE_NAME: app
-  API_BASE_URL: ${{ secrets.API_BASE_URL }}
 
 jobs:
   build-deploy:
@@ -28,16 +27,13 @@ jobs:
         DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         MINIO_USER: ${{ secrets.MINIO_USER }}
         MINIO_PASSWORD: ${{ secrets.MINIO_PASSWORD }}
-        BUCKET_NAME: ${{ secrets.BUCKET_NAME }}
       run: |
         sed -i "s/{{MINIO_USER}}/$MINIO_USER/g" k8s/app.yaml
         sed -i "s/{{MINIO_PASSWORD}}/$MINIO_PASSWORD/g" k8s/app.yaml
-        sed -i "s/{{BUCKET_NAME}}/$BUCKET_NAME/g" k8s/app.yaml
         sed -i "s/{{DB_USER}}/$DB_USER/g" k8s/postgres.yaml
         sed -i "s/{{DB_PASSWORD}}/$DB_PASSWORD/g" k8s/postgres.yaml
         sed -i "s/{{MINIO_USER}}/$MINIO_USER/g" k8s/minio.yaml
         sed -i "s/{{MINIO_PASSWORD}}/$MINIO_PASSWORD/g" k8s/minio.yaml
-        sed -i "s/{{BUCKET_NAME}}/$BUCKET_NAME/g" k8s/minio.yaml
 
     # Step 3: Authenticate to Google Cloud
     - name: Authenticate to Google Cloud
@@ -77,11 +73,38 @@ jobs:
       run: |
         gcloud components install gke-gcloud-auth-plugin
 
-    # Step 10: Deploy to GKE
+    # Step 10: Create TLS Secret
+    - name: Create TLS Secret
+      run: |
+        kubectl create secret tls nginx-tls-secret \
+          --cert=nginx-ssl/tls.crt \
+          --key=nginx-ssl/tls.key \
+          --namespace=aic-hcmus-app
+
+    # Step 11: Create Grafana ConfigMaps
+    - name: Create Grafana ConfigMaps
+      run: |
+        kubectl create configmap grafana-provisioning \
+          --from-file=grafana/provisioning \
+          --namespace=aic-hcmus-monitor
+
+        kubectl create configmap grafana-dashboards \
+          --from-file=grafana/dashboards \
+          --namespace=aic-hcmus-monitor
+
+    # Step 12: Deploy to GKE
     - name: Deploy to GKE
       run: |
         kubectl apply -f k8s/namespace.yaml
-        kubectl apply -f k8s/postgres.yaml
         kubectl apply -f k8s/minio.yaml
+        kubectl apply -f k8s/postgres.yaml
+        kubectl apply -f k8s/redis.yaml
         kubectl apply -f k8s/app.yaml
+        kubectl apply -f k8s/celery.yaml
         kubectl apply -f k8s/nginx.yaml
+        kubectl apply -f k8s/celery-exporter.yaml
+        kubectl apply -f k8s/node-exporter.yaml
+        kubectl apply -f k8s/postgres-exporter.yaml
+        kubectl apply -f k8s/redis-exporter.yaml
+        kubectl apply -f k8s/prometheus.yaml
+        kubectl apply -f k8s/grafana.yaml

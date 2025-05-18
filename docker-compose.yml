@@ -1,25 +1,30 @@
 services:
   app:
-    image: app
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"  
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+      - "8080:8080"
     depends_on:
       db:
         condition: service_healthy
       minio:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
-      - app_network  
+      - app_network
     environment:
-      API_BASE_URL: http://localhost:8080
       DATABASE_URL: postgresql://user:password@db:5432/mydatabase
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
-      BUCKET_NAME: testing
+      MINIO_URL: http://minio:9000
+      BACKEND_URL: https://localhost:443
+      GOOGLE_CLIENT_ID: 793710439296-m5ufnjhel9fjmkc1g1ua4n6q3ip5hvc4.apps.googleusercontent.com
+      GOOGLE_CLIENT_SECRET: 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
+      SECRET_KEY: this_is_a_secret_key
+      REDIRECT_URL: https://localhost:443
+      REDIS_URL: redis://redis:6379/0
 
   db:
     image: postgres:15-alpine
@@ -32,7 +37,7 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d mydatabase"]
+      test: [ "CMD-SHELL", "pg_isready -U user -d mydatabase" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -45,13 +50,14 @@ services:
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_PROMETHEUS_AUTH_TYPE: public 
     volumes:
       - minio_data:/data
     ports:
       - "9000:9000"
       - "9001:9001"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://minio:9000/minio/health/live"]
+      test: [ "CMD", "curl", "-f", "http://minio:9000/minio/health/live" ]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -62,13 +68,106 @@ services:
     image: nginx:alpine
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx-ssl:/etc/nginx/ssl:ro
     ports:
-      - "80:80"
+      - "443:443"
     depends_on:
-      - app  
+      - app
       - minio
     networks:
-      - app_network  
+      - app_network
+
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: celery -A app.predict.tasks.celery_app worker --loglevel=info --concurrency=1 --without-gossip --without-mingle --without-heartbeat
+    depends_on:
+      - app
+      - redis
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "celery", "-A", "app.predict.tasks.celery_app", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    environment:
+      IS_CELERY_WORKER: true
+      REDIS_URL: redis://redis:6379/0
+      
+  redis:
+    image: redis:alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - app_network
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./grafana/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - app_network
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - app_network
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9100:9100"
+    networks:
+      - app_network
+
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:latest
+    environment:
+      DATA_SOURCE_NAME: "postgresql://user:password@db:5432/mydatabase?sslmode=disable"
+    ports:
+      - "9187:9187"
+    depends_on:
+      - db
+    networks:
+      - app_network
+
+  celery-exporter:
+    image: danihodovic/celery-exporter:latest
+    environment:
+      - CE_BROKER_URL=redis://redis:6379/0
+    ports:
+      - "9808:9808"  
+    depends_on:
+      - redis
+    networks:
+      - app_network
+
+  redis-exporter:
+    image: oliver006/redis_exporter:latest
+    ports:
+      - "9121:9121"
+    environment:
+      - REDIS_ADDR=redis://redis:6379
+    depends_on:
+      - redis
+    networks:
+      - app_network
 
 volumes:
   postgres_data:

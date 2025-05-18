@@ -1,19 +1,35 @@
 import { createContext, useState, useContext, ReactNode } from "react";
 
+interface User {
+  id: number;
+  username: string;
+  email?: string;
+  full_name?: string;
+  profile_picture?: string;
+}
+
 interface UserContextType {
-  user: string | null;
-  login: (userData: string) => void;
+  user: User | null;
+  login: (userData: User) => void;
   logout: () => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export const UserProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<string | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    const storedUser = localStorage.getItem("user");
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
 
-  const login = (userData: string) => setUser(userData);
+  const login = (userData: User) => {
+    localStorage.setItem("user", JSON.stringify(userData));
+    setUser(userData);
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     setUser(null);
     window.location.href = "/";
   };

@@ -4,8 +4,9 @@ from huggingface_hub import hf_hub_download
 import numpy as np
 import cv2
 from PIL import Image
-from io import BytesIO
 from random import randint
+from io import BytesIO
+import matplotlib.pyplot as plt
 
 class Model:
     def __init__(
@@ -32,7 +33,8 @@ class Model:
     def postprocess(self, model_result):
         pass
 
-    def get_overlaid_mask(self, image: Image, binary_masks: np.ndarray):
+    @staticmethod
+    def get_overlaid_mask(image: Image, masks: np.ndarray):  
         image_array = np.array(image)
         if image_array.shape[-1] == 4:  # Handle RGBA images
             image_array = image_array[:, :, :3]
@@ -40,7 +42,7 @@ class Model:
         # Resize binary masks to match the image dimensions
         resized_masks = [
             np.array(Image.fromarray(mask.astype(np.uint8)).resize(image.size, Image.NEAREST), dtype=bool)
-            for mask in binary_masks
+            for mask in masks
         ]
 
         # Generate random colors for each mask
@@ -52,118 +54,63 @@ class Model:
         for mask, color in zip(resized_masks, colors):
             overlaid_image[mask] = np.array(color, dtype=np.uint8) * 0.5 + overlaid_image[mask] * 0.5
 
-        # Convert the overlaid image to base64
-        buffer = BytesIO()
-        Image.fromarray(overlaid_image.astype(np.uint8)).save(buffer, format="PNG")
-        return base64.b64encode(buffer.getvalue()).decode("utf-8")
-  
-    def _detect_calibration_object(self, img_rgb):
-        """
-        Detect calibration object (usually a red ball) in the image
-        
-        Parameters:
-            img_rgb: Input image in RGB format
-            
-        Returns:
-            has_calibration: Boolean indicating if calibration object was found
-            calibration_obj: Tuple (x, y, radius) of the calibration object
-        """
-        try:
-            # Convert to HSV color space for easier red color detection
-            hsv = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2HSV)
-            
-            # Define red color range (red is at the beginning and end of HSV color range)
-            lower_red1 = np.array([0, 120, 70])
-            upper_red1 = np.array([10, 255, 255])
-            lower_red2 = np.array([170, 120, 70])
-            upper_red2 = np.array([180, 255, 255])
-            
-            # Create mask for red regions
-            mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
-            mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
-            red_mask = mask1 | mask2
-            
-            # Morphological operations to clean up the mask
-            kernel = np.ones((5, 5), np.uint8)
-            red_mask = cv2.morphologyEx(red_mask, cv2.MORPH_OPEN, kernel)
-            red_mask = cv2.morphologyEx(red_mask, cv2.MORPH_CLOSE, kernel)
-            
-            # Find contours in the mask
-            contours, _ = cv2.findContours(red_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            
-            # Filter contours by shape (close to circular)
-            calibration_balls = []
-            for contour in contours:
-                area = cv2.contourArea(contour)
-                perimeter = cv2.arcLength(contour, True)
-                
-                if area < 100 or perimeter == 0:
-                    continue
-                    
-                # Calculate circularity of the contour
-                circularity = 4 * np.pi * area / (perimeter * perimeter)
-                
-                # If circular enough, add to the list
-                if circularity > 0.7:
-                    (x, y), radius = cv2.minEnclosingCircle(contour)
-                    calibration_balls.append((int(x), int(y), int(radius)))
-            
-            if calibration_balls:
-                # Sort by radius in descending order and take the largest ball
-                calibration_balls.sort(key=lambda x: x[2], reverse=True)
-                return True, calibration_balls[0]
-                
-            return False, None
-            
-        except Exception as e:
-            print(f"Error detecting calibration object: {e}")
-            return False, None
+        return overlaid_image
 
-    def get_volume(self, img, binary_masks):
-        volumes = []
-        if isinstance(binary_masks, np.ndarray) and binary_masks.ndim > 2:
-            masks_list = [mask.astype(np.uint8) for mask in binary_masks]
-        elif isinstance(binary_masks, list):
-            masks_list = [mask.astype(np.uint8) for mask in binary_masks]
-        else:
-            masks_list = [binary_masks.astype(np.uint8)]
-        
-        for mask in masks_list:
-            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-            
-            if not contours:
-                volumes.append(0)
-                continue
-            contour = max(contours, key=cv2.contourArea)
-            area = cv2.contourArea(contour)
-            perimeter = cv2.arcLength(contour, True)
-            M = cv2.moments(contour)
-            if M["m00"] == 0:
-                volumes.append(0)
-                continue
-            try:
-                (x, y), (major_axis, minor_axis), angle = cv2.fitEllipse(contour)
-                aspect_ratio = major_axis / minor_axis if minor_axis > 0 else 1 
-                circularity = 4 * np.pi * area / (perimeter * perimeter) if perimeter > 0 else 0
-                equivalent_diameter = np.sqrt(4 * area / np.pi)
-                
-                sphere_volume = (4/3) * np.pi * (equivalent_diameter/2)**3
-                
-                ellipsoid_volume = (4/3) * np.pi * (major_axis/2) * (minor_axis/2) * (minor_axis/2)
-                
-                empirical_volume = area**1.5 * (0.8 + 0.4 * circularity)
-                
-                if circularity > 0.8:  
-                    final_volume = 0.6 * sphere_volume + 0.2 * ellipsoid_volume + 0.2 * empirical_volume
-                elif circularity > 0.5:  
-                    final_volume = 0.3 * sphere_volume + 0.4 * ellipsoid_volume + 0.3 * empirical_volume
-                else: 
-                    final_volume = 0.1 * sphere_volume + 0.5 * ellipsoid_volume + 0.4 * empirical_volume   
-                volumes.append(float(final_volume))
-            except Exception as e:
-                volumes.append(float(area**1.5 * 0.8))
-        
-        return volumes
+    def get_diameter(self, masks):
+        diameters = []
+        for mask in masks:
+            area = np.sum(mask) 
+            if area > 0:  
+                diameter = np.sqrt(4 * area / np.pi)
+                diameters.append(diameter)
+
+        diameters = np.array(diameters)
+        diameters_sorted = np.sort(diameters)
+        return diameters_sorted 
+    
+    @staticmethod
+    def draw_cdf_chart(diameters: np.ndarray):  
+        D10 = np.percentile(diameters, 10)
+        D50 = np.percentile(diameters, 50)
+        D90 = np.percentile(diameters, 90)
+        Dmin = diameters.min()
+        Dmax = diameters.max()
+        Davg = diameters.mean()
+
+        cdf = np.arange(1, len(diameters) + 1) / len(diameters) * 100
+        plt.figure(figsize=(12, 8))
+        plt.plot(diameters, cdf, marker='.', linestyle='-', label='CDF', color='blue')
+
+        # Add vertical lines for D10, D50, D90
+        plt.axvline(D10, color='deepskyblue', linestyle='--', label=f'D10 = {D10:.2f}')
+        plt.axvline(D50, color='purple', linestyle='--', label=f'D50 = {D50:.2f}')
+        plt.axvline(D90, color='blue', linestyle='--', label=f'D90 = {D90:.2f}')
+        plt.axvline(Dmin, color='green', linestyle='--', label=f'Dmin = {Dmin:.2f}')
+        plt.axvline(Dmax, color='red', linestyle='--', label=f'Dmax = {Dmax:.2f}')
+        plt.axvline(Davg, color='orange', linestyle='--', label=f'Davg = {Davg:.2f}')
+
+        # Add horizontal lines for 10%, 50%, 90%
+        plt.axhline(10, color='deepskyblue', linestyle='--', alpha=0.3)
+        plt.axhline(50, color='purple', linestyle='--', alpha=0.3)
+        plt.axhline(90, color='blue', linestyle='--', alpha=0.3)
+
+        max_x = diameters.max()  
+        plt.text(max_x * 1.01, 10, '10%', color='deepskyblue', verticalalignment='bottom', fontsize=10)
+        plt.text(max_x * 1.01, 50, '50%', color='purple', verticalalignment='bottom', fontsize=10)
+        plt.text(max_x * 1.01, 90, '90%', color='blue', verticalalignment='bottom', fontsize=10)
+
+        # Customize the plot
+        plt.xlabel('Fragment Size (D)')
+        plt.ylabel('Cumulative Percentage (%)')
+        plt.title(f'Cumulative Distribution Function (CDF) of Fragment Sizes\nTotal Fragments: {len(diameters)}')
+        plt.grid(True)
+        plt.legend()
+
+        buf = BytesIO()
+        plt.savefig(buf, format='png')
+        buf.seek(0)
+        plt.close()
+        return Image.open(buf)
 
     async def predict(self, img: Image, conf: float=0.5, iou: float=0.5, save: bool=False):
         print("Model trying to inference...")
@@ -173,17 +120,14 @@ class Model:
                 print("No masks were generated by the model.")
                 return None
             masks = results[0].masks.data.cpu().numpy()
-
-            print("Mask shape: ", masks.shape)
-            
         except Exception as e:
             print(f"Error during prediction: {e}")
             return None
-        
-        volumes = self.get_volume(img, masks)
-        is_calibrated = False
-        overlaid_img = self.get_overlaid_mask(img, masks)
-        print("Model inference successfully")
-        return (masks, overlaid_img, volumes, is_calibrated)
 
-model = Model()
+        diameters = self.get_diameter(masks)
+        cdf_chart = self.draw_cdf_chart(diameters)
+        overlaid_img = self.get_overlaid_mask(img, masks)
+        is_calibrated = False
+        print("Model inference successfully")
+        return (masks, overlaid_img, diameters, cdf_chart, is_calibrated)
+
