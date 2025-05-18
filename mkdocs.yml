@@ -14,7 +14,7 @@ plugins:
       docs_structure: suffix
       default_language: en
       languages:
-        - locale: en
+        en:
           default: true
           name: English
           build: true
@@ -25,7 +25,7 @@ plugins:
             - API: api.md
             - Model: model.md
             - About: about.md
-        - locale: vi
+        vi:
           name: Tiếng Việt
           build: true
           nav:
