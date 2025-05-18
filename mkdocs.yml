@@ -2,6 +2,19 @@ site_name: AIC-HCMUS Fragment Segmentation
 site_url: https://magnusdtd.github.io/AIC-HCMUS-Fragment-Segmentation/
 repo_url: https://github.com/magnusdtd/AIC-HCMUS-Fragment-Segmentation
 theme:
+  palette: 
+    # Palette toggle for light mode
+    - scheme: default
+      toggle:
+        icon: material/brightness-7 
+        name: Switch to dark mode
+
+    # Palette toggle for dark mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
   logo: assets/ai-made-by-rock-fragment.svg
   favicon: assets/ai-made-by-rock-fragment.svg
   name: material
@@ -30,14 +43,13 @@ plugins:
         - locale: vi
           name: Tiếng Việt
           build: true
-      nav_translations:
-        vi:
-          Home: Trang chủ
-          Usage: Sử dụng
-          App: Ứng dụng
-          API: API
-          Model: Mô hình
-          About: Giới thiệu
+          nav:
+            - Trang chủ: index.vi.md
+            - Sử dụng: usage.vi.md
+            - Ứng dung: app.vi.md
+            - Tài liệu API: api.vi.md
+            - Mô hình: model.vi.md
+            - Giới thiệu: about.vi.md
 
 markdown_extensions:
   - pymdownx.highlight:
