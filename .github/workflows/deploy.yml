@@ -16,17 +16,17 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Update Node.js and npm
-    - name: Update Node.js and npm
-      run: |
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-        export NVM_DIR="$HOME/.nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-        nvm install node
-        node -v
-        npm -v
+    # Step 1: Checkout source code
+    - name: Checkout source
+      uses: actions/checkout@v3
 
-    # Step 2: Install OpenSSL and create TLS files
+    # Step 2: Set up Node.js
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '24.0.2'
+
+    # Step 3: Install OpenSSL and create TLS files
     - name: Install OpenSSL and create TLS files
       run: |
         sudo apt update && sudo apt install -y openssl
@@ -34,10 +34,6 @@ jobs:
         openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
           -keyout nginx-ssl/tls.key -out nginx-ssl/tls.crt \
           -subj "/CN=localhost"
-
-    # Step 3: Checkout source code
-    - name: Checkout source
-      uses: actions/checkout@v3
 
     # Step 4: Replace placeholders in YAML files
     - name: Replace placeholders in YAML files
@@ -95,6 +91,8 @@ jobs:
     # Step 12: Create TLS Secret
     - name: Create TLS Secret
       run: |
+        kubectl apply -f k8s/namespace.yaml
+        kubectl delete secret nginx-tls-secret --namespace=aic-hcmus-app --ignore-not-found
         kubectl create secret tls nginx-tls-secret \
           --cert=nginx-ssl/tls.crt \
           --key=nginx-ssl/tls.key \
@@ -114,7 +112,6 @@ jobs:
     # Step 14: Deploy to GKE
     - name: Deploy to GKE
       run: |
-        kubectl apply -f k8s/namespace.yaml
         kubectl apply -f k8s/minio.yaml
         kubectl apply -f k8s/postgres.yaml
         kubectl apply -f k8s/redis.yaml
@@ -127,4 +124,3 @@ jobs:
         kubectl apply -f k8s/redis-exporter.yaml
         kubectl apply -f k8s/prometheus.yaml
         kubectl apply -f k8s/grafana.yaml
-
