@@ -16,13 +16,13 @@ Hướng dẫn này giải thích cách sử dụng ứng dụng Phân Đoạn M
 
 ### Sử Dụng Docker Compose
 
-1. Tạo bản sao mã nguồn:
+1. Clone mã nguồn:
    ```sh
    git clone https://github.com/magnusdtd/AIC-HCMUS-Fragment-Segmentation.git
    cd AIC-HCMUS-Fragment-Segmentation
    ```
 
-2. Khởi động tất cả dịch vụ:
+2. Khởi động tất cả services:
    ```sh
    docker-compose up --build
    ```
@@ -35,7 +35,7 @@ Hướng dẫn này giải thích cách sử dụng ứng dụng Phân Đoạn M
 
 ### Backend
 
-1. Cài đặt các thư viện phụ thuộc:
+1. Cài đặt các dependencies:
    ```
    cd backend
    pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
@@ -50,7 +50,7 @@ Hướng dẫn này giải thích cách sử dụng ứng dụng Phân Đoạn M
 
 ### Frontend
 
-1. Cài đặt các thư viện phụ thuộc:
+1. Cài đặt các dependencies:
    ```
    cd frontend
    npm install

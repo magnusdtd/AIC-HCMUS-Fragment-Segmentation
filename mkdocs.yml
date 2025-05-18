@@ -9,32 +9,35 @@ theme:
     - content.code.copy
     - content.code.select
 
+nav:
+  - Home: index.md
+  - Usage: usage.md
+  - App: app.md
+  - API: api.md
+  - Model: model.md
+  - About: about.md
+
 plugins:
+  - search
   - i18n:
-      docs_structure: suffix
       default_language: en
       languages:
-        en:
+        - locale: en
           default: true
           name: English
           build: true
-          nav:
-            - Home: index.md
-            - Usage: usage.md
-            - App: app.md
-            - API: api.md
-            - Model: model.md
-            - About: about.md
-        vi:
+          
+        - locale: vi
           name: Tiếng Việt
           build: true
-          nav:
-            - Trang chủ: index.vi.md
-            - Sử dụng: usage.vi.md
-            - Ứng dụng: app.vi.md
-            - API: api.vi.md
-            - Mô hình: model.vi.md
-            - Giới thiệu: about.vi.md
+      nav_translations:
+        vi:
+          Home: Trang chủ
+          Usage: Sử dụng
+          App: Ứng dụng
+          API: API
+          Model: Mô hình
+          About: Giới thiệu
 
 markdown_extensions:
   - pymdownx.highlight:
