@@ -113,19 +113,24 @@ jobs:
     - name: Create Grafana ConfigMaps
       run: |
         kubectl apply -f k8s/namespace.yaml
-        kubectl apply configmap grafana-dashboards \
+
+        kubectl delete configmap grafana-dashboards -n aic-hcmus-monitor --ignore-not-found
+        kubectl create configmap grafana-dashboards \
           --from-file=grafana/dashboards \
           -n aic-hcmus-monitor
-        
-        kubectl apply configmap grafana-provisioning-alerting \
+
+        kubectl delete configmap grafana-provisioning-alerting -n aic-hcmus-monitor --ignore-not-found
+        kubectl create configmap grafana-provisioning-alerting \
           --from-file=grafana/provisioning/alerting \
           -n aic-hcmus-monitor
 
-        kubectl apply configmap grafana-provisioning-datasources \
+        kubectl delete configmap grafana-provisioning-datasources -n aic-hcmus-monitor --ignore-not-found
+        kubectl create configmap grafana-provisioning-datasources \
           --from-file=grafana/provisioning/datasources \
           -n aic-hcmus-monitor
 
-        kubectl apply configmap grafana-provisioning-dashboards \
+        kubectl delete configmap grafana-provisioning-dashboards -n aic-hcmus-monitor --ignore-not-found
+        kubectl create configmap grafana-provisioning-dashboards \
           --from-file=grafana/provisioning/dashboards \
           -n aic-hcmus-monitor
 
