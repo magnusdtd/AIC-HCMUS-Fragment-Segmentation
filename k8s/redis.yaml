@@ -1,15 +1,3 @@
-# k8s/redis.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: redis
-  namespace: aic-hcmus-app
-spec:
-  ports:
-    - port: 6379
-  selector:
-    app: redis
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -30,3 +18,14 @@ spec:
           image: redis:alpine
           ports:
             - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: aic-hcmus-app
+spec:
+  ports:
+    - port: 6379
+  selector:
+    app: redis

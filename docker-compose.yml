@@ -19,11 +19,10 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
       MINIO_URL: http://minio:9000
-      BACKEND_URL: https://localhost:443
+      BASE_URL: https://localhost:443
       GOOGLE_CLIENT_ID: 793710439296-m5ufnjhel9fjmkc1g1ua4n6q3ip5hvc4.apps.googleusercontent.com
       GOOGLE_CLIENT_SECRET: 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
       SECRET_KEY: this_is_a_secret_key
-      REDIRECT_URL: https://localhost:443
       REDIS_URL: redis://redis:6379/0
 
   db:

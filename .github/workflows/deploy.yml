@@ -20,88 +20,131 @@ jobs:
     - name: Checkout source
       uses: actions/checkout@v3
 
-    # Step 2: Replace placeholders in YAML files
+    # Step 2: Set up Node.js
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '24.0.2'
+
+    # Step 3: Install OpenSSL and create TLS files
+    - name: Install OpenSSL and create TLS files
+      run: |
+        sudo apt update && sudo apt install -y openssl
+        mkdir -p nginx-ssl
+        openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+          -keyout nginx-ssl/tls.key -out nginx-ssl/tls.crt \
+          -subj "/CN=aic-hcmus-noobers.duckdns.org"
+
+    # Step 4: Replace placeholders in YAML files
     - name: Replace placeholders in YAML files
       env:
         DB_USER: ${{ secrets.DB_USER }}
         DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
         MINIO_USER: ${{ secrets.MINIO_USER }}
         MINIO_PASSWORD: ${{ secrets.MINIO_PASSWORD }}
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
       run: |
         sed -i "s/{{MINIO_USER}}/$MINIO_USER/g" k8s/app.yaml
         sed -i "s/{{MINIO_PASSWORD}}/$MINIO_PASSWORD/g" k8s/app.yaml
+        sed -i "s/{{DB_USER}}/$DB_USER/g" k8s/app.yaml
+        sed -i "s/{{DB_PASSWORD}}/$DB_PASSWORD/g" k8s/app.yaml
+        sed -i "s/{{SECRET_KEY}}/$SECRET_KEY/g" k8s/app.yaml
+        sed -i "s/{{GOOGLE_CLIENT_ID}}/${{ secrets.GOOGLE_CLIENT_ID }}/g" k8s/app.yaml
+        sed -i "s/{{GOOGLE_CLIENT_SECRET}}/${{ secrets.GOOGLE_CLIENT_SECRET }}/g" k8s/app.yaml
+
         sed -i "s/{{DB_USER}}/$DB_USER/g" k8s/postgres.yaml
         sed -i "s/{{DB_PASSWORD}}/$DB_PASSWORD/g" k8s/postgres.yaml
+
         sed -i "s/{{MINIO_USER}}/$MINIO_USER/g" k8s/minio.yaml
         sed -i "s/{{MINIO_PASSWORD}}/$MINIO_PASSWORD/g" k8s/minio.yaml
 
-    # Step 3: Authenticate to Google Cloud
+        sed -i "s/{{DB_USER}}/$DB_USER/g" k8s/postgres-exporter.yaml
+        sed -i "s/{{DB_PASSWORD}}/$DB_PASSWORD/g" k8s/postgres-exporter.yaml
+
+    # Step 5: Authenticate to Google Cloud
     - name: Authenticate to Google Cloud
       uses: google-github-actions/auth@v1
       with:
         credentials_json: ${{ secrets.GCP_SA_KEY }}
 
-    # Step 4: Set up Google Cloud SDK
+    # Step 6: Set up Google Cloud SDK
     - name: Set up Google Cloud SDK
       uses: google-github-actions/setup-gcloud@v1
       with:
         project_id: ${{ secrets.PROJECT_ID }}
 
-    # Step 5: Configure Docker for Google Container Registry (GCR)
+    # Step 7: Configure Docker for Google Container Registry (GCR)
     - name: Configure Docker for GCR
       run: gcloud auth configure-docker
 
-    # Step 6: Build Docker image
+    # Step 8: Build Docker image
     - name: Build Docker image
       run: |
         docker build -t gcr.io/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest .
 
-    # Step 7: Push Docker image to GCR
+    # Step 9: Push Docker image to GCR
     - name: Push Docker image to GCR
       run: |
         docker push gcr.io/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest
 
-    # Step 8: Get GKE Cluster Credentials
+    # Step 10: Get GKE Cluster Credentials
     - name: Get GKE Cluster Credentials
       run: |
         gcloud container clusters get-credentials ${{ env.CLUSTER_NAME }} \
           --region ${{ env.REGION }} \
           --project ${{ secrets.PROJECT_ID }}
         
-    # Step 9: Install gke-gcloud-auth-plugin
+    # Step 11: Install gke-gcloud-auth-plugin
     - name: Install gke-gcloud-auth-plugin
       run: |
         gcloud components install gke-gcloud-auth-plugin
 
-    # Step 10: Create TLS Secret
+    # Step 12: Create TLS Secret
     - name: Create TLS Secret
       run: |
-        kubectl create secret tls nginx-tls-secret \
+        kubectl apply -f k8s/namespace.yaml
+        kubectl delete secret nginx-ssl --namespace=aic-hcmus-app --ignore-not-found
+        kubectl create secret tls nginx-ssl \
           --cert=nginx-ssl/tls.crt \
           --key=nginx-ssl/tls.key \
           --namespace=aic-hcmus-app
 
-    # Step 11: Create Grafana ConfigMaps
+    # Step 13: Create Grafana ConfigMaps
     - name: Create Grafana ConfigMaps
       run: |
-        kubectl create configmap grafana-provisioning \
-          --from-file=grafana/provisioning \
-          --namespace=aic-hcmus-monitor
+        kubectl apply -f k8s/namespace.yaml
 
+        kubectl delete configmap grafana-dashboards -n aic-hcmus-monitor --ignore-not-found
         kubectl create configmap grafana-dashboards \
           --from-file=grafana/dashboards \
-          --namespace=aic-hcmus-monitor
+          -n aic-hcmus-monitor
 
-    # Step 12: Deploy to GKE
+        kubectl delete configmap grafana-provisioning-alerting -n aic-hcmus-monitor --ignore-not-found
+        kubectl create configmap grafana-provisioning-alerting \
+          --from-file=grafana/provisioning/alerting \
+          -n aic-hcmus-monitor
+
+        kubectl delete configmap grafana-provisioning-datasources -n aic-hcmus-monitor --ignore-not-found
+        kubectl create configmap grafana-provisioning-datasources \
+          --from-file=grafana/provisioning/datasources \
+          -n aic-hcmus-monitor
+
+        kubectl delete configmap grafana-provisioning-dashboards -n aic-hcmus-monitor --ignore-not-found
+        kubectl create configmap grafana-provisioning-dashboards \
+          --from-file=grafana/provisioning/dashboards \
+          -n aic-hcmus-monitor
+
+    # Step 14: Deploy to GKE
     - name: Deploy to GKE
       run: |
-        kubectl apply -f k8s/namespace.yaml
         kubectl apply -f k8s/minio.yaml
         kubectl apply -f k8s/postgres.yaml
         kubectl apply -f k8s/redis.yaml
+        sleep 15
         kubectl apply -f k8s/app.yaml
         kubectl apply -f k8s/celery.yaml
         kubectl apply -f k8s/nginx.yaml
+        
         kubectl apply -f k8s/celery-exporter.yaml
         kubectl apply -f k8s/node-exporter.yaml
         kubectl apply -f k8s/postgres-exporter.yaml

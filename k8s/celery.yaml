@@ -19,6 +19,6 @@ spec:
           command: ["celery", "-A", "app.predict.tasks.celery_app", "worker", "--loglevel=info", "--concurrency=1", "--without-gossip", "--without-mingle", "--without-heartbeat"]
           env:
             - name: IS_CELERY_WORKER
-              value: true
+              value: "true"
             - name: REDIS_URL
-              value: redis://redis.aic-hcmus-app.svc.cluster.local:6379/0
+              value: "redis://redis.aic-hcmus-app.svc.cluster.local:6379/0"

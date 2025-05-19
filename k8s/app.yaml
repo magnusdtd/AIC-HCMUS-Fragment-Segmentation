@@ -28,26 +28,24 @@ spec:
         command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
         env:
         - name: DATABASE_URL
-          value: "postgresql://user:password@postgres.aic-hcmus.svc.cluster.local:5432/mydatabase"
+          value: "postgresql://{{DB_USER}}:{{DB_PASSWORD}}@postgres.aic-hcmus-app.svc.cluster.local:5432/mydatabase"
         - name: MINIO_URL
           value: "http://minio.aic-hcmus-app.svc.cluster.local:9000"
         - name: MINIO_ROOT_USER
           value: "{{MINIO_USER}}"
         - name: MINIO_ROOT_PASSWORD
           value: "{{MINIO_PASSWORD}}"
-        - name: BACKEND_URL
-          value: "https://localhost:443"
+        - name: BASE_URL
+          value: "https://aic-hcmus-noobers.duckdns.org"
         - name: GOOGLE_CLIENT_ID
-          value: "793710439296-m5ufnjhel9fjmkc1g1ua4n6q3ip5hvc4.apps.googleusercontent.com"
+          value: "{{GOOGLE_CLIENT_ID}}"
         - name: GOOGLE_CLIENT_SECRET
-          value: "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"
+          value: "{{GOOGLE_CLIENT_SECRET}}"
         - name: SECRET_KEY
-          value: "this_is_a_secret_key"
-        - name: REDIRECT_URL
-          value: "https://localhost:443"
+          value: "{{SECRET_KEY}}"
         - name: REDIS_URL
           value: "redis://redis.aic-hcmus-app.svc.cluster.local:6379/0"
-
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -59,3 +57,23 @@ spec:
     targetPort: 8080
   selector:
     app: app
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: app-hpa
+  namespace: aic-hcmus-app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: app
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50

@@ -1,66 +1,3 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: prometheus-config
-  namespace: aic-hcmus-monitor
-data:
-  prometheus.yml: |
-    global:
-      scrape_interval: 5s
-
-    scrape_configs:
-      - job_name: fastapi
-        static_configs:
-          - targets: ['app:8080']
-
-      - job_name: node_exporter
-        static_configs:
-          - targets: ['node-exporter:9100']
-          
-      - job_name: postgres-exporter
-        static_configs:
-          - targets: ['postgres-exporter:9187']
-
-      - job_name: minio-job-cluster
-        metrics_path: /minio/v2/metrics/cluster
-        scheme: http
-        static_configs:
-          - targets: ['minio:9000']
-
-      - job_name: minio-job-bucket
-        metrics_path: /minio/v2/metrics/bucket
-        scheme: http
-        static_configs:
-        - targets: ['minio:9000']
-
-      - job_name: minio-job-node
-        metrics_path: /minio/v2/metrics/node
-        scheme: http
-        static_configs:
-        - targets: ['minio:9000']
-
-      - job_name: minio-job-resource
-        metrics_path: /minio/v2/metrics/resource
-        scheme: http
-        static_configs:
-        - targets: ['minio:9000']
-
-      - job_name: celery
-        static_configs:
-          - targets: ['celery-exporter:9808']
-
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: prometheus
-  namespace: aic-hcmus-monitor
-spec:
-  ports:
-    - port: 9090
-  selector:
-    app: prometheus
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -91,3 +28,71 @@ spec:
         - name: prometheus-config
           configMap:
             name: prometheus-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: aic-hcmus-monitor
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 5s
+
+    scrape_configs:
+      - job_name: fastapi
+        static_configs:
+          - targets: ['app:8080']
+
+      - job_name: node_exporter
+        static_configs:
+          - targets: ['node-exporter:9100']
+          
+      - job_name: postgres-exporter
+        static_configs:
+          - targets: ['postgres-exporter:9187']
+
+      - job_name: minio-job-cluster
+        metrics_path: /minio/v2/metrics/cluster
+        scheme: http
+        static_configs:
+          - targets: ['minio.aic-hcmus-app.svc.cluster.local:9000']
+
+      - job_name: minio-job-bucket
+        metrics_path: /minio/v2/metrics/bucket
+        scheme: http
+        static_configs:
+          - targets: ['minio.aic-hcmus-app.svc.cluster.local:9000']
+
+      - job_name: minio-job-node
+        metrics_path: /minio/v2/metrics/node
+        scheme: http
+        static_configs:
+          - targets: ['minio.aic-hcmus-app.svc.cluster.local:9000']
+
+      - job_name: minio-job-resource
+        metrics_path: /minio/v2/metrics/resource
+        scheme: http
+        static_configs:
+          - targets: ['minio.aic-hcmus-app.svc.cluster.local:9000']
+
+      - job_name: celery
+        static_configs:
+          - targets: ['celery-exporter:9808']
+
+      - job_name: redis-exporter
+        static_configs:
+          - targets: ['redis-exporter:9121']
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: aic-hcmus-monitor
+spec:
+  ports:
+    - port: 9090
+  selector:
+    app: prometheus
+---

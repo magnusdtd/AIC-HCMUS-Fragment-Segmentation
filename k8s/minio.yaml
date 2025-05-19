@@ -26,6 +26,8 @@ spec:
           value: "{{MINIO_USER}}"
         - name: MINIO_ROOT_PASSWORD
           value: "{{MINIO_PASSWORD}}"
+        - name: MINIO_PROMETHEUS_AUTH_TYPE
+          value: "public"
         resources:
           requests:
             memory: "256Mi"

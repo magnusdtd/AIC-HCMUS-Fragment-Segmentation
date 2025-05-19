@@ -13,7 +13,7 @@ router = APIRouter()
 # Google OAuth2 config
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-BACKEND_URL = os.getenv("BACKEND_URL")
+BASE_URL = os.getenv("BASE_URL")
 
 config_data = {
     'GOOGLE_CLIENT_ID': GOOGLE_CLIENT_ID,
@@ -34,7 +34,7 @@ oauth.register(
 
 @router.get('/google-login')
 async def google_login(request: Request):
-    redirect_uri = f"{BACKEND_URL}/api/auth/google-callback"
+    redirect_uri = f"{BASE_URL}/api/auth/google-callback"
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 @router.get('/google-callback')
@@ -75,5 +75,5 @@ async def google_callback(request: Request, db: Session = Depends(get_session)):
         data={"sub": user.username}
     )
     # Redirect to frontend with token as query param
-    frontend_url = os.getenv("REDIRECT_URL")
+    frontend_url = os.getenv("BASE_URL")
     return RedirectResponse(f"{frontend_url}/login?token={access_token}")
