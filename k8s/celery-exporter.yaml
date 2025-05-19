@@ -1,15 +1,3 @@
-# k8s/celery-exporter.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: celery-exporter
-  namespace: aic-hcmus-monitor
-spec:
-  ports:
-    - port: 9808
-  selector:
-    app: celery-exporter
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -33,3 +21,14 @@ spec:
               value: "redis://redis.aic-hcmus-app.svc.cluster.local:6379/0"
           ports:
             - containerPort: 9808
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: celery-exporter
+  namespace: aic-hcmus-monitor
+spec:
+  ports:
+    - port: 9808
+  selector:
+    app: celery-exporter

@@ -27,11 +27,11 @@ spec:
         - name: nginx-config
           mountPath: /etc/nginx/nginx.conf
           subPath: nginx.conf
-        ports:
-        - containerPort: 443
-        volumeMounts:
         - name: nginx-ssl
           mountPath: /etc/nginx/ssl
+        ports:
+        - containerPort: 80
+        - containerPort: 443
       volumes:
       - name: nginx-config
         configMap:
@@ -83,7 +83,11 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-  - port: 443
+  - name: https
+    port: 443
     targetPort: 443
+  - name: http
+    port: 80
+    targetPort: 80
   selector:
     app: nginx
