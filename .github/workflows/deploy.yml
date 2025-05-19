@@ -33,7 +33,7 @@ jobs:
         mkdir -p nginx-ssl
         openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
           -keyout nginx-ssl/tls.key -out nginx-ssl/tls.crt \
-          -subj "/CN=https://aic-hcmus-noobers.duckdns.org"
+          -subj "/CN=aic-hcmus-noobers.duckdns.org"
 
     # Step 4: Replace placeholders in YAML files
     - name: Replace placeholders in YAML files
