@@ -49,6 +49,8 @@ jobs:
         sed -i "s/{{DB_USER}}/$DB_USER/g" k8s/app.yaml
         sed -i "s/{{DB_PASSWORD}}/$DB_PASSWORD/g" k8s/app.yaml
         sed -i "s/{{SECRET_KEY}}/$SECRET_KEY/g" k8s/app.yaml
+        sed -i "s/{{GOOGLE_CLIENT_ID}}/${{ secrets.GOOGLE_CLIENT_ID }}/g" k8s/app.yaml
+        sed -i "s/{{GOOGLE_CLIENT_SECRET}}/${{ secrets.GOOGLE_CLIENT_SECRET }}/g" k8s/app.yaml
 
         sed -i "s/{{DB_USER}}/$DB_USER/g" k8s/postgres.yaml
         sed -i "s/{{DB_PASSWORD}}/$DB_PASSWORD/g" k8s/postgres.yaml
@@ -110,19 +112,20 @@ jobs:
     # Step 13: Create Grafana ConfigMaps
     - name: Create Grafana ConfigMaps
       run: |
-        kubectl create configmap grafana-dashboards \
+        kubectl apply -f k8s/namespace.yaml
+        kubectl apply configmap grafana-dashboards \
           --from-file=grafana/dashboards \
           -n aic-hcmus-monitor
         
-        kubectl create configmap grafana-provisioning-alerting \
+        kubectl apply configmap grafana-provisioning-alerting \
           --from-file=grafana/provisioning/alerting \
           -n aic-hcmus-monitor
 
-        kubectl create configmap grafana-provisioning-datasources \
+        kubectl apply configmap grafana-provisioning-datasources \
           --from-file=grafana/provisioning/datasources \
           -n aic-hcmus-monitor
 
-        kubectl create configmap grafana-provisioning-dashboards \
+        kubectl apply configmap grafana-provisioning-dashboards \
           --from-file=grafana/provisioning/dashboards \
           -n aic-hcmus-monitor
 

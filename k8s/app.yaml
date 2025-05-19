@@ -38,9 +38,9 @@ spec:
         - name: BASE_URL
           value: "https://aic-hcmus-noobers.duckdns.org"
         - name: GOOGLE_CLIENT_ID
-          value: "793710439296-m5ufnjhel9fjmkc1g1ua4n6q3ip5hvc4.apps.googleusercontent.com"
+          value: "{{GOOGLE_CLIENT_ID}}"
         - name: GOOGLE_CLIENT_SECRET
-          value: "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"
+          value: "{{GOOGLE_CLIENT_SECRET}}"
         - name: SECRET_KEY
           value: "{{SECRET_KEY}}"
         - name: REDIS_URL
@@ -57,3 +57,23 @@ spec:
     targetPort: 8080
   selector:
     app: app
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: app-hpa
+  namespace: aic-hcmus-app
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: app
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50
