@@ -75,7 +75,7 @@ class DatabaseService:
             task_id=task_id,
             mask_key=binary_mask_key,
             metrics_key=metrics_key,
-            has_calibrated=is_calibrated
+            is_calibrated=is_calibrated
         )
 
         db.add(prediction)
@@ -83,16 +83,6 @@ class DatabaseService:
         db.refresh(prediction)
 
         return prediction
-
-    @staticmethod
-    def get_prediction_from_minio(mask_key: str, metrics_key: str):
-        masks_response = minio_client.get_object(MASK_BUCKET, mask_key)
-        masks = pickle.loads(masks_response.read())
-
-        metrics_response = minio_client.get_object(METRICS_BUCKET, metrics_key)
-        metrics = pickle.loads(metrics_response.read())
-
-        return masks, metrics
 
     @staticmethod
     def get_user_by_username(db: Session, username: str) -> User:
@@ -114,6 +104,23 @@ class DatabaseService:
     def get_img_from_minio(filename: str) -> bytes:
         img_response = minio_client.get_object(IMG_BUCKET, filename)
         return img_response.read()
+
+    @staticmethod
+    def get_img_from_minio(filename: str) -> bytes:
+        img_response = minio_client.get_object(IMG_BUCKET, filename)
+        return img_response.read()
+    
+    @staticmethod
+    def get_mask_from_minio(mask_key: str) -> np.ndarray:
+        mask_response = minio_client.get_object(MASK_BUCKET, mask_key)
+        mask = pickle.loads(mask_response.read())
+        return mask
+    
+    @staticmethod
+    def get_metric_from_minio(metrics_key: str):
+        metrics_response = minio_client.get_object(METRICS_BUCKET, metrics_key)
+        metrics = pickle.loads(metrics_response.read())
+        return metrics
 
     @staticmethod
     def get_user_tasks_by_user_id(db: Session, user_id: int) -> list[UserTask]:
@@ -142,3 +149,18 @@ class DatabaseService:
         db.commit()
         db.refresh(user_task)
         return user_task
+
+    @staticmethod
+    def get_user_tasks_by_img_id(db: Session, user_id: int, img_id: int):
+        return db.query(UserTask).filter(UserTask.user_id == user_id, UserTask.img_id == img_id).all()
+
+    @staticmethod
+    def get_img_metadata_by_name(db: Session, filename: str) -> ImageMetadata:
+        statement = select(ImageMetadata).where(ImageMetadata.filename == filename)
+        return db.exec(statement).first()
+
+    @staticmethod
+    def get_img_id_by_task_id(db: Session, task_id: str) -> int:
+        statement = select(UserTask).where(UserTask.task_id == task_id)
+        user_task = db.exec(statement).first()
+        return user_task.img_id if user_task else None

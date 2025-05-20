@@ -138,7 +138,7 @@ export default function NavBar() {
           )}
         </div>
 
-        {/* Right: User Info or Auth Links */}
+        {/* Right: Theme Switcher and User Info / Auth Links */}
         <div className="flex space-x-4 items-center">
           {/* Theme Switcher */}
           <div className="flex items-center">
@@ -147,6 +147,7 @@ export default function NavBar() {
               onChange={() => setDarkMode((prev) => !prev)}
             />
           </div>
+          {/* User Info / Auth Links */}
           {user ? (
             <div className="relative" ref={menuRef}>
               <button
@@ -159,7 +160,7 @@ export default function NavBar() {
                 <span className="ml-1">&#x25BC;</span>
               </button>
               {menuOpen && (
-                <div className="absolute right-0 mt-2 w-40 bg-white rounded shadow-lg z-50 border border-gray-200">
+                <div className="absolute right-0 mt-2 w-50 h-auto bg-white rounded shadow-lg z-50 border border-gray-200">
                   <div className="px-4 py-2 text-gray-800 border-b border-gray-100">{user.username}</div>
                   <button
                     onClick={logout}

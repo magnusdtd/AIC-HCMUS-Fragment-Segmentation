@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends, Response
+from fastapi import APIRouter, HTTPException, Depends, Response, Query
 from app.models.database import User, get_session
 from app.models.queries import DatabaseService
 from app.routers.auth import AuthRouter
@@ -13,6 +13,7 @@ class DisplayImageRouter:
     def _setup_routes(self):
         self.router.get("/display_images")(self.get_user_images)
         self.router.get("/fetch_image/{filename}")(self.fetch_image)
+        self.router.get('/check_image_exists')(self.check_image_exists)
 
     def get_user_images(self, db: Session = Depends(get_session), current_user: User = Depends(AuthRouter.get_current_user)):
         print("Inside get_user_images function, current user is ", current_user)
@@ -47,5 +48,14 @@ class DisplayImageRouter:
             return result
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching image: {e}")
+        
+    def check_image_exists(self, img_name: str = Query(...), db: Session = Depends(get_session), current_user: dict = Depends(AuthRouter.get_current_user)):
+        try:
+            img_metadata = DatabaseService.get_img_metadata_by_name(db, img_name)
+            if img_metadata:
+                return {"exists": True, "message": "Image already exists on the server."}
+            return {"exists": False, "message": "Image does not exist on the server."}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 display_img_router = DisplayImageRouter().router

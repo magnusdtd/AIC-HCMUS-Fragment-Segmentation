@@ -2,7 +2,6 @@ import os, base64
 from ultralytics import YOLO
 from huggingface_hub import hf_hub_download
 import numpy as np
-import cv2
 from PIL import Image
 from random import randint
 from io import BytesIO
@@ -36,20 +35,16 @@ class Model:
     @staticmethod
     def get_overlaid_mask(image: Image, masks: np.ndarray):  
         image_array = np.array(image)
-        if image_array.shape[-1] == 4:  # Handle RGBA images
+        if image_array.shape[-1] == 4: 
             image_array = image_array[:, :, :3]
 
-        # Resize binary masks to match the image dimensions
         resized_masks = [
             np.array(Image.fromarray(mask.astype(np.uint8)).resize(image.size, Image.NEAREST), dtype=bool)
             for mask in masks
         ]
-
-        # Generate random colors for each mask
         num_masks = len(resized_masks)
         colors = [tuple(randint(0, 255) for _ in range(3)) for _ in range(num_masks)]
 
-        # Overlay masks on the image
         overlaid_image = image_array.copy()
         for mask, color in zip(resized_masks, colors):
             overlaid_image[mask] = np.array(color, dtype=np.uint8) * 0.5 + overlaid_image[mask] * 0.5

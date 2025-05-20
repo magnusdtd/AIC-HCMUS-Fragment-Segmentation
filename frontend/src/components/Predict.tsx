@@ -5,6 +5,7 @@ import { useDropzone } from "react-dropzone";
 import Card from "@mui/material/Card";
 import CardContent from "@mui/material/CardContent";
 import Tooltip from '@mui/material/Tooltip';
+import { useSearchParams } from "react-router-dom";
 
 function Predict() {
   const [file, setFile] = useState<File | null>(null);
@@ -15,46 +16,96 @@ function Predict() {
   const [originalImagePreview, setOriginalImagePreview] = useState<string | null>(null);
   const [cdfChart, setCdfChart] = useState<string | null>(null);
   const [isCalibrated, setIsCalibrated] = useState<boolean | null>(null);
+  const [isProcessing, setIsProcessing] = useState<boolean>(false);
+
+  const [searchParams] = useSearchParams();
+  const imageFilename = searchParams.get("image");
+
+  useEffect(() => {
+    if (imageFilename) {
+      const fetchImage = async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const response = await api.get(`/api/fetch_image/${imageFilename}`, {
+            responseType: "blob",
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const imageUrl = URL.createObjectURL(response.data);
+          setOriginalImagePreview(imageUrl);
+          setFile(null); 
+        } catch (error) {
+          console.error("Error fetching image for prediction:", error);
+          setMessage("Failed to load the selected image for prediction.");
+        }
+      };
+
+      fetchImage();
+    }
+  }, [imageFilename]);
 
   // Handle drag and drop
   const onDrop = React.useCallback((acceptedFiles: File[]) => {
-    if (acceptedFiles && acceptedFiles.length > 0) {
+    if (!isProcessing && acceptedFiles && acceptedFiles.length > 0) {
       setFile(acceptedFiles[0]);
       setOriginalImagePreview(URL.createObjectURL(acceptedFiles[0]));
     }
-  }, []);
+  }, [isProcessing]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     multiple: false,
     accept: { 'image/*': [] },
+    disabled: isProcessing, // Disable drag & drop when processing
   });
 
   // Handle file upload and get task_id
   const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!file) {
-      setMessage("Please select a file to upload");
+    if (!file && !imageFilename) {
+      setMessage("Please select a file to upload or use the provided image.");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
+    setIsProcessing(true); // Set processing state to true
 
     try {
       const token = localStorage.getItem("token");
-      const response = await api.post<{ task_id: string }>("/api/upload_predict", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-          Authorization: `Bearer ${token}`,
-        },
+
+      // Check if the image already exists on the server
+      const checkResponse = await api.get<{ exists: boolean }>(`/api/check_image_exists?img_name=${imageFilename || file?.name}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      setTaskId(response.data.task_id);
-      setMessage("File uploaded successfully. Task is processing...");
+      if (checkResponse.data.exists) {
+        // If the image exists, use the re-predict API
+        const rePredictResponse = await api.get<{ task_id: string }>(`/api/re_predict?img_name=${imageFilename || file?.name}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setTaskId(rePredictResponse.data.task_id);
+        setMessage("Trying to re-predict...");
+      } else {
+        // If the image does not exist, upload it
+        const formData = new FormData();
+        if (file) {
+          formData.append("file", file);
+        } else if (imageFilename) {
+          formData.append("imageFilename", imageFilename);
+        }
+
+        const uploadResponse = await api.post<{ task_id: string }>("/api/upload_predict", formData, {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setTaskId(uploadResponse.data.task_id);
+        setMessage("File uploaded successfully. Task is processing...");
+      }
     } catch (error) {
       console.error(error);
-      setMessage("Failed to upload the file.");
+      setMessage("Failed to process the image.");
+      setIsProcessing(false); // Reset processing state on error
     }
   };
 
@@ -103,11 +154,13 @@ function Predict() {
             setCdfChart(resultResponse.data.result.cdf_chart);
             setIsCalibrated(resultResponse.data.result.is_calibrated);
             setMessage("Prediction completed successfully.");
+            setIsProcessing(false); // Reset processing state on success
           }
         } catch (error) {
           console.error(error);
           setMessage("Failed to fetch task status.");
           clearInterval(interval);
+          setIsProcessing(false); // Reset processing state on error
         }
       }, 5000);
 
@@ -123,7 +176,7 @@ function Predict() {
           {...getRootProps()}
           className={`border-2 border-dashed rounded p-6 mb-4 w-80 flex flex-col items-center justify-center cursor-pointer transition-colors duration-200 ${isDragActive ? 'border-blue-500 bg-blue-50 dark:bg-blue-800' : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800'}`}
         >
-          <input {...getInputProps()} />
+          <input {...getInputProps()} disabled={isProcessing} />
           {isDragActive ? (
             <p className="text-blue-500 dark:text-blue-300">Drop the file here ...</p>
           ) : file ? (
@@ -137,6 +190,7 @@ function Predict() {
             <button
               type="submit"
               className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700"
+              disabled={isProcessing} // Disable button when processing
             >
               Predict
             </button>
