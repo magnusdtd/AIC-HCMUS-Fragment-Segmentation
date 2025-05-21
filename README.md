@@ -1,7 +1,38 @@
 # AIC-HCMUS Fragment Segmentation Application Summary
 
 ## Overview
-This application is a full-stack solution for fragment segmentation, built for the HCMUS AI Challenge. It includes a **React frontend**, a **FastAPI backend**, and supporting services like **PostgreSQL**, **MinIO**, and **NGINX**. The application is containerized using **Docker** and orchestrated with **Kubernetes** for deployment.
+This application is a full-stack solution for fragment segmentation, built for the HCMUS AI Challenge. It includes a **React frontend**, a **FastAPI backend**, and supporting services like **PostgreSQL**, **MinIO**, **Celery worker**, **Redis**, and **NGINX**. **Grafana** and **Prometheus** have been added to this app for observation and alerting to Discord. The application is containerized using **Docker** and orchestrated with **Kubernetes** for deployment. This project contains a pipeline to automatically deploy the app to Google Kubernetes Engine (GKE).
+
+---
+
+## System Architecture
+![App Architecture](frontend/public/app-architecture.jpg)
+
+---
+
+## Folder Structure
+```
+.
+├── backend              # Backend, built with FastAPI
+│   ├── app              # Main application directory
+│   │   ├── models       # Database models and queries
+│   │   ├── predict      # Celery tasks for background processing
+│   │   ├── routers      # API endpoint routers
+│   │   ├── scripts      # Backup scripts for database and MinIO
+│   │   └── utils        # Helper modules (security, MinIO, YOLO integration)
+├── docs                 # Documentation files
+├── frontend             # Frontend, built with React and TypeScript
+│   ├── public           # Public assets (images, icons, etc.)
+│   ├── src              # Source code for the frontend
+│   │   ├── components   # Reusable UI components
+│   │   ├── context      # Context for state management
+│   │   ├── lib          # Utility functions
+│   │   └── services     # API communication logic
+├── grafana              # Grafana configuration for monitoring
+├── k8s                  # Kubernetes YAML files for deployment
+├── tests                # Testing and load test scripts
+└── notebooks            # Jupyter notebooks for experimentation
+```
 
 ---
 
@@ -10,69 +41,41 @@ This application is a full-stack solution for fragment segmentation, built for t
    - Built with **React** and **TypeScript**.
    - Uses **TailwindCSS** for styling.
    - Implements **React Router** for navigation.
-   - Provides user authentication (login/register).
-   - Allows users to upload images, view predictions, and visualize results (e.g., overlaid masks, volume data).
-   - Includes reusable UI components like `Predict`, `UserImages`, and `Tabs`.
+   - Provides manual user authentication (login/register) and OAuth2 to use Google Account for login.
+   - Allows users to upload images, view predictions, and visualize results (e.g., overlaid masks, **Equivalent Diameter (ED)** chart).
+   - Users can see their previous images and download them.
 
 2. **Backend**:
    - Built with **FastAPI**.
    - Handles user authentication with JWT tokens.
    - Provides endpoints for image upload, prediction, and fetching results.
-   - Integrates with **YOLOv11m** for segmentation and volume calculation.
+   - Integrates with **YOLOv11m** for segmentation and particle size calculation.
    - Stores metadata and predictions in **PostgreSQL**.
    - Uses **MinIO** for object storage (e.g., images, binary masks).
+   - Uses **Celery** for asynchronous task processing (e.g., running predictions in the background) with **Redis** as the message broker.
+   - **Prometheus** is used for monitoring metrics.
+   - **Grafana** is used for dashboard visualization and alerting.
+   - **Grafana alerts** are configured to send notifications to **Discord**.
 
 3. **Machine Learning**:
-   - Utilizes a YOLOv11m segmentation model downloaded from **Hugging Face**.
-   - Detects calibration objects (e.g., red balls) for volume estimation.
-   - Generates overlaid masks and calculates object volumes.
+   - The app uses a YOLOv11m segmentation model. This model has been fine-tuned on the Rock Fragment Dataset. The backend will download it from [Hugging Face](https://huggingface.co/magnusdtd/aic-hcmus-2025-yolo11m-seg).
+   - Detects calibration objects (red balls) to convert pixel values to real-world values.
+   - Generates overlaid masks and draws a CDF chart of the ED distribution.
 
 4. **Infrastructure**:
    - **Docker Compose** for local development.
-   - **Kubernetes** manifests for deployment (PostgreSQL, MinIO, app, NGINX).
+   - **Kubernetes** manifests for deployment (app, PostgreSQL, MinIO, NGINX).
    - CI/CD pipeline using **GitHub Actions** to build and deploy to **Google Kubernetes Engine (GKE)**.
-
----
-
-## Application Structure
-
-### Root Level
-- **`docker-compose.yml`**: Defines services for local development.
-- **`Dockerfile`**: Multi-stage build for frontend and backend.
-- **`.github/workflows/deploy.yml`**: CI/CD pipeline for GKE deployment.
-
-### Frontend (`frontend/`)
-- **Core Technologies**: React, TypeScript, TailwindCSS, Vite.
-- **Key Files**:
-  - `vite.config.ts`: Configures Vite for development and build.
-  - `src/components/`: Contains reusable UI components (e.g., `Predict`, `UserImages`, `Login`, `Register`).
-  - `src/services/api.ts`: Axios instance for API communication.
-  - `src/context/UserContext.tsx`: Manages user authentication state.
-  - `package.json`: Defines dependencies and scripts.
-
-### Backend (`backend/`)
-- **Core Technologies**: FastAPI, SQLModel, MinIO, YOLOv11m.
-- **Key Files**:
-  - `app/main.py`: Entry point for the FastAPI app.
-  - `app/routers/`: Contains API endpoint routers (e.g., `auth.py`, `predict.py`, `display_img.py`).
-  - `app/models/`: Defines database models and queries.
-  - `app/utils/`: Includes helper modules for security, MinIO, and YOLO model integration.
-  - `requirements.txt`: Lists Python dependencies.
-
-### Kubernetes (`k8s/`)
-- **Manifests**:
-  - `namespace.yaml`: Defines the `aic-hcmus` namespace.
-  - `postgres.yaml`: Configures PostgreSQL deployment and service.
-  - `minio.yaml`: Configures MinIO deployment and service.
-  - `app.yaml`: Configures the FastAPI app deployment and service.
-  - `nginx.yaml`: Configures NGINX as a reverse proxy.
+   - Uses a Celery worker and **Redis** as the message broker for task queuing.
+   - **Prometheus** and **Grafana** for monitoring and alerting.
+   - **DuckDNS** is used to provide a public domain for accessing the application after deployment on Google Cloud.
 
 ---
 
 ## Deployment Workflow
 1. **Local Development**:
    - Use `docker-compose.yml` to spin up services locally.
-   - Frontend runs on `http://localhost:3000`, backend on `http://localhost:8080`.
+   - The app runs on `https://localhost:443`.
 
 2. **CI/CD Pipeline**:
    - Triggered on `deploy` branch push.
@@ -80,37 +83,21 @@ This application is a full-stack solution for fragment segmentation, built for t
    - Deploys to **Google Kubernetes Engine (GKE)** using Kubernetes manifests.
 
 3. **Production Deployment**:
-   - Services are deployed in the `aic-hcmus` namespace.
-   - NGINX serves as a reverse proxy for the frontend and backend.
-
----
-
-## Key Endpoints
-### Backend API
-- **Authentication**:
-  - `POST /api/auth/register`: Register a new user.
-  - `POST /api/auth/login`: Login and retrieve JWT token.
-  - `GET /api/auth/current-user`: Validate token and fetch user info.
-- **Image Upload & Prediction**:
-  - `POST /api/upload`: Upload an image.
-  - `POST /api/upload_predict`: Upload an image and run prediction.
-  - `GET /api/display_images`: Fetch metadata for user-uploaded images.
-  - `GET /api/fetch_image/{filename}`: Fetch an image from MinIO.
+   - The app services are deployed in the `aic-hcmus-app` namespace, and the monitoring services are deployed in the `aic-hcmus-monitor` namespace.
+   - NGINX serves as a reverse proxy and load balancer for the frontend and backend.
 
 ---
 
 ## Technologies Used
 - **Frontend**: React, TypeScript, TailwindCSS, Vite.
-- **Backend**: FastAPI, SQLModel, MinIO, YOLOv11m.
+- **Backend**: FastAPI, SQLModel, MinIO, YOLOv11m-seg, Celery.
 - **Database**: PostgreSQL.
-- **Storage**: MinIO.
+- **S3 Storage**: MinIO.
+- **Task Queue**: Celery with Redis as the message broker.
 - **Containerization**: Docker.
 - **Orchestration**: Kubernetes.
 - **CI/CD**: GitHub Actions.
 - **Cloud**: Google Kubernetes Engine (GKE).
 
 ---
-
-## Notes
-- The YOLOv11m model is dynamically downloaded from **Hugging Face** during runtime.
-- The application uses **GNU GPL v3** as its license.
+For more details about this application, please read the [documentation page](https://magnusdtd.github.io/AIC-HCMUS-Fragment-Segmentation/).

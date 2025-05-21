@@ -1,0 +1,13 @@
+apiVersion: 1
+contactPoints:
+    - orgId: 1
+      name: Discord Alert
+      receivers:
+        - uid: celmu56qifb40b
+          type: webhook
+          settings:
+            httpMethod: POST
+            payload:
+                template: "{\n  \"content\": \"\U0001F6A8 Alert: {{ .CommonLabels.alertname }} is firing!\\n\\nMetric: {{ .CommonLabels.metric }}\\nValue: {{ .CommonAnnotations.summary }}\"\n}"
+            url: https://discord.com/api/webhooks/1371359567958642688/mpVQPnzVhCxF66aeVQdiLRxEt7jQgHan797E1-IwVLdnW1oiznzUlGeTXK-8ViK-7Enf
+          disableResolveMessage: false

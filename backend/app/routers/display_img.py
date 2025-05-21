@@ -1,53 +1,61 @@
-from fastapi import APIRouter, HTTPException, Depends, Response
+from fastapi import APIRouter, HTTPException, Depends, Response, Query
 from app.models.database import User, get_session
-from app.models.queries import get_user_image_by_user_id, get_user_by_username
-from app.routers.auth import get_current_user
-from app.utils.minio import minio_client, BUCKET_NAME
+from app.models.queries import DatabaseService
+from app.routers.auth import AuthRouter
 from sqlmodel import Session
 from mimetypes import guess_type
 
-router = APIRouter()
+class DisplayImageRouter:
+    def __init__(self):
+        self.router = APIRouter()
+        self._setup_routes()
 
-@router.get("/display_images")
-def get_user_images(
-    db: Session = Depends(get_session), 
-    current_user: User = Depends(get_current_user)
-):
-    try:
-        username = current_user["user"]
-        user = get_user_by_username(db, username)
-        images = get_user_image_by_user_id(db, user.id)
-        result = {
-            "images": [
-                {
-                    "id": image.id,
-                    "filename": image.filename,
-                    "size": image.size,
-                    "upload_time": image.upload_time,
-                }
-                for image in images
-            ]
-        }
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    def _setup_routes(self):
+        self.router.get("/display_images")(self.get_user_images)
+        self.router.get("/fetch_image/{filename}")(self.fetch_image)
+        self.router.get('/check_image_exists')(self.check_image_exists)
 
-@router.get("/fetch_image/{filename}")
-def fetch_image(filename: str):
-    try:
-        # Fetch the image from MinIO
-        response = minio_client.get_object(BUCKET_NAME, filename)
+    def get_user_images(self, db: Session = Depends(get_session), current_user: User = Depends(AuthRouter.get_current_user)):
+        print("Inside get_user_images function, current user is ", current_user)
+        try:
+            images = DatabaseService.get_user_image_by_user_id(db, current_user.id)
+            result = {
+                "images": [
+                    {
+                        "id": image.id,
+                        "filename": image.filename,
+                        "size": image.size,
+                        "upload_time": image.upload_time,
+                    }
+                    for image in images
+                ]
+            }
+            return result
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    def fetch_image(self, filename: str):
+        try:
+            image_data = DatabaseService.get_img_from_minio(filename)
+            if image_data is None:
+                raise HTTPException(status_code=404, detail="Image not found")
+
+            mime_type, _ = guess_type(filename)
+            if not mime_type:
+                mime_type = "application/octet-stream"
+
+            result = Response(content=image_data, media_type=mime_type)
+            return result
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Error fetching image: {e}")
         
-        # Read the image data
-        image_data = response.read()
-        
-        # Guess the MIME type of the file
-        mime_type, _ = guess_type(filename)
-        if not mime_type:
-            mime_type = "application/octet-stream"  # Fallback MIME type
-        
-        # Return the image as a streaming response
-        result = Response(content=image_data, media_type=mime_type)
-        return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error fetching image: {e}")
+    def check_image_exists(self, img_name: str = Query(...), db: Session = Depends(get_session), current_user: dict = Depends(AuthRouter.get_current_user)):
+        try:
+            img_metadata = DatabaseService.get_img_metadata_by_name(db, img_name)
+            if img_metadata:
+                return {"exists": True, "message": "Image already exists on the server."}
+            return {"exists": False, "message": "Image does not exist on the server."}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+display_img_router = DisplayImageRouter().router
