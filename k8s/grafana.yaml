@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: aic-hcmus-monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana:latest
+          ports:
+            - containerPort: 3000
+          volumeMounts:
+          - name: grafana-dashboards
+            mountPath: /var/lib/grafana/dashboards
+          - name: provisioning-alerting
+            mountPath: /etc/grafana/provisioning/alerting
+          - name: provisioning-datasources
+            mountPath: /etc/grafana/provisioning/datasources
+          - name: provisioning-dashboards
+            mountPath: /etc/grafana/provisioning/dashboards
+      volumes:
+      - name: grafana-dashboards
+        configMap:
+          name: grafana-dashboards
+      - name: provisioning-alerting
+        configMap:
+          name: grafana-provisioning-alerting
+      - name: provisioning-datasources
+        configMap:
+          name: grafana-provisioning-datasources
+      - name: provisioning-dashboards
+        configMap:
+          name: grafana-provisioning-dashboards
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: aic-hcmus-monitor
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 3000
+      targetPort: 3000
+  selector:
+    app: grafana

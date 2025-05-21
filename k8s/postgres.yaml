@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postgres
-  namespace: aic-hcmus
+  namespace: aic-hcmus-app
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: postgres
-        image: postgres:15
+        image: postgres:15-alpine
         resources:
           requests:
             memory: "256Mi"
@@ -33,7 +33,7 @@ spec:
         - name: PGDATA
           value: "/var/lib/postgresql/data/pgdata"
         volumeMounts:
-        - name: postgres-data
+        - name: postgres-storage
           mountPath: /var/lib/postgresql/data
         ports:
         - containerPort: 5432
@@ -43,7 +43,7 @@ spec:
           initialDelaySeconds: 10
           periodSeconds: 10
       volumes:
-      - name: postgres-data
+      - name: postgres-storage
         persistentVolumeClaim:
           claimName: postgres-pvc
 ---
@@ -51,7 +51,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: postgres-pvc
-  namespace: aic-hcmus
+  namespace: aic-hcmus-app
 spec:
   storageClassName: standard
   accessModes:
@@ -64,7 +64,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: postgres
-  namespace: aic-hcmus
+  namespace: aic-hcmus-app
 spec:
   ports:
   - port: 5432

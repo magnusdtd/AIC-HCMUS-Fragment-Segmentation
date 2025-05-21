@@ -1,1 +1,6 @@
+@config "./../tailwind.config.ts";
 @import "tailwindcss";
+
+body, #root {
+  @apply bg-white text-gray-900 dark:bg-gray-700 dark:text-gray-100 transition-colors duration-300;
+}

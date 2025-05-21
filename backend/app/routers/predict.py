@@ -1,118 +1,215 @@
 from fastapi import APIRouter, UploadFile, HTTPException, Depends
-from app.models.database import get_session, Prediction
-from app.routers.auth import get_current_user
-from app.models.queries import get_user_by_username, create_img_metadata, create_prediction, fetch_prediction_from_minio
-from app.utils.model import model
+from fastapi.responses import StreamingResponse
+from app.models.database import get_session
+from app.routers.auth import AuthRouter
+from app.models.queries import DatabaseService
+from app.predict.tasks import celery_app, predict_task
+from app.utils.model import Model
 from sqlmodel import Session
-from datetime import datetime
 from PIL import Image
-from app.models.queries import create_prediction
-import io
+import io, base64
+import zipfile
+import numpy as np
 
-router = APIRouter()
+class PredictRouter:
+    def __init__(self):
+        self.router = APIRouter()
+        self._setup_routes()
 
-@router.post("/upload")
-async def upload_image(
-    file: UploadFile, 
-    db: Session = Depends(get_session), 
-    current_user: dict = Depends(get_current_user)  
-):
-    try:
-        username = current_user["user"]
-        user = get_user_by_username(db, username)
+    def _setup_routes(self):
+        self.router.post('/upload')(self.upload_image)
+        self.router.post('/upload_predict/{real_radius}&{unit}&{conf}&{iou}')(self.upload_and_predict)
+        self.router.get('/task_status/{task_id}')(self.get_task_status)
+        self.router.get('/fetch_prediction/{task_id}')(self.fetch_prediction)
+        self.router.get('/get_user_tasks')(self.get_user_tasks)
+        self.router.get('/re_predict/{real_radius}&{img_name}&{unit}&{conf}&{iou}')(self.re_predict)
+        self.router.get('/get_prediction/{task_id}')(self.get_prediction)
+        self.router.get('/download_results/{task_id}')(self.download_results)
 
-        metadata = await create_img_metadata(db, user, file)
+    async def _fetch_prediction_data(self, task_id: str, db: Session = Depends(get_session)):
 
-        return {"message": "File uploaded successfully", "metadata": metadata}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@router.post("/upload_predict")
-async def upload_and_predict(
-    file: UploadFile, 
-    db: Session = Depends(get_session), 
-    current_user: dict = Depends(get_current_user)  
-):
-    try:
-        # Get the current user
-        username = current_user["user"]
-        user = get_user_by_username(db, username)
-
-        # Store metadata in the database
-        metadata = await create_img_metadata(db, user, file)
-
-        # Process the uploaded image
-        file_content = await file.read()
-        image = Image.open(io.BytesIO(file_content)).convert("RGBA")
-
-        # Perform prediction using the model
-        binary_masks, overlaid_img, volumes, is_calibrated = await model.predict(image, conf=0.5, iou=0.5)
-
-        # Store prediction in the database
-        await create_prediction(db, metadata.id, binary_masks, volumes, is_calibrated)
-
-        return {
-            "message": "Prediction completed successfully",
-            "metadata": metadata,
-            "volumes": volumes,
-            "overlaid_image": overlaid_img,
-            "is_calibrated": is_calibrated 
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-  
-@router.get("/fetch_prediction")
-def fetch_prediction(
-    img_id: int,
-    upload_time: datetime,
-    db: Session = Depends(get_session), 
-    current_user: dict = Depends(get_current_user)  
-):
-    try:
-        # Query the prediction from the database
-        prediction = db.query(Prediction).filter(
-            Prediction.id == img_id,
-            Prediction.update_time == upload_time
-        ).first()
-
+        prediction = DatabaseService.get_prediction_by_task_id(db, task_id)
         if not prediction:
             raise HTTPException(status_code=404, detail="Prediction not found")
+        
+        masks = DatabaseService.get_mask_from_minio(prediction.mask_key)
+        if not masks:
+            raise HTTPException(status_code=404, detail="Masks not found in MinIO")
+        
+        metrics = DatabaseService.get_metric_from_minio(prediction.metrics_key)
+        if not metrics:
+            raise HTTPException(status_code=404, detail="Metrics not found in MinIO")
+        
+        img_id = DatabaseService.get_img_id_by_task_id(db, task_id)
+        if not img_id:  
+            raise HTTPException(status_code=404, detail="Image ID not found for task")
 
-        # Fetch binary masks and volumes from MinIO
-        binary_masks, volumes = fetch_prediction_from_minio(
-            prediction.binary_mask_key, 
-            prediction.volumes_key
+        img_metadata = DatabaseService.get_img_metadata_by_id(db, img_id)
+        if not img_metadata:
+            raise HTTPException(status_code=404, detail="Image metadata not found")
+        
+        img = DatabaseService.get_img_from_minio(img_metadata.filename)
+        if not img:
+            raise HTTPException(status_code=404, detail="Image not found in MinIO")
+        
+        masks = np.array(masks)
+        metrics = np.array(metrics)
+        img = Image.open(io.BytesIO(img))
+
+        return prediction, masks, metrics, img
+
+    def _generate_zip_response(self, overlaid_image, cdf_chart, task_id):
+        overlaid_buffer = io.BytesIO()
+        Image.fromarray(overlaid_image.astype("uint8")).save(overlaid_buffer, format="PNG")
+        overlaid_buffer.seek(0)
+
+        cdf_buffer = io.BytesIO()
+        cdf_chart.save(cdf_buffer, format="PNG")
+        cdf_buffer.seek(0)
+
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, "w") as zip_file:
+            zip_file.writestr("overlaid_image.png", overlaid_buffer.getvalue())
+            zip_file.writestr("cdf_chart.png", cdf_buffer.getvalue())
+        zip_buffer.seek(0)
+
+        return StreamingResponse(
+            zip_buffer,
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename=results_{task_id}.zip"},
         )
 
-        return {
-            "binary_masks": binary_masks,
-            "volumes": volumes,
-            "is_calibrated": prediction.has_calibrated
-        }
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    async def upload_image(self, file: UploadFile, db: Session = Depends(get_session), current_user: dict = Depends(AuthRouter.get_current_user)):
+        try:
+            username = current_user['user']
+            user = DatabaseService.get_user_by_username(db, username)
+            metadata = await DatabaseService.create_img_metadata(db, user, file)
+            return {'message': 'File uploaded successfully', 'metadata': metadata}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("re_predict")
-def get_prediction(
-    img_name: str,
-    db: Session = Depends(get_session), 
-    current_user: dict = Depends(get_current_user)  
-):
-  # User want to re-predict their image. Store new prediction to database.
-  try:
-      pass
-  except Exception as e:
-      raise Exception(status_code=500, detail=str(e))
-  
-@router.get("get_prediction_metadata")
-def get_prediction_metadata(
-    db: Session = Depends(get_session), 
-    current_user: dict = Depends(get_current_user)  
-):
-  # The frontend will show user all of their images and predictions
-  # For each image of an user, server will return all of their prediction .
-  # (img_id, update_time)
-  try:
-      pass
-  except Exception as e:
-      raise Exception(status_code=500, detail=str(e))
+    async def upload_and_predict(self, real_radius: int, unit: str, conf: float, iou: float, file: UploadFile, db: Session = Depends(get_session), current_user: dict = Depends(AuthRouter.get_current_user)):
+        try:
+            img_metadata = await DatabaseService.create_img_metadata(db, current_user, file)
+            content = await file.read()
+            async_result = predict_task.delay(content, real_radius, unit, conf, iou)
+            DatabaseService.create_user_task(db=db, user_id=current_user.id, img_metadata_id=img_metadata.id, task_id=async_result.id)
+            return {"task_id": async_result.id}
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    def get_task_status(self, task_id: str, current_user: dict = Depends(AuthRouter.get_current_user)):
+        try:
+            result = celery_app.AsyncResult(task_id)
+            return {'status': result.state}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    async def fetch_prediction(self, task_id: str, db: Session = Depends(get_session), current_user: dict = Depends(AuthRouter.get_current_user)):
+        try:
+            result = celery_app.AsyncResult(task_id)
+            if (result.state == 'SUCCESS'):
+                task_result = result.result
+                await DatabaseService.create_prediction(
+                    db=db,
+                    task_id=task_id,
+                    masks=task_result.get('masks'),
+                    metrics=task_result.get('metrics'),
+                    is_calibrated=task_result.get('is_calibrated'),
+                    unit=task_result.get('unit', None),
+                    conf=task_result.get('conf'),
+                    iou=task_result.get('iou')
+                )
+                response = {
+                    'overlaid_image': task_result.get('overlaid_image'),
+                    'cdf_chart': task_result.get('cdf_chart'),
+                    'is_calibrated': task_result.get('is_calibrated')
+                }
+                result.forget()
+                return {'status': 'success', 'result': response}
+            elif result.state in ['PENDING', 'RETRY', 'FAILURE']:
+                return {'status': result.state}
+            else:
+                raise HTTPException(status_code=500, detail="Unexpected task state")
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    def get_user_tasks(self, img_id: int, db: Session = Depends(get_session), current_user: dict = Depends(AuthRouter.get_current_user)):
+        try:
+            tasks = DatabaseService.get_user_tasks_by_img_id(db, current_user.id, img_id)
+            if not tasks:
+                raise HTTPException(status_code=404, detail="No tasks found for this user")
+
+            return {
+                'message': 'Fetched user tasks successfully',
+                'tasks': [
+                    {
+                        'task_id': task.task_id,
+                        'created_at': str(task.created_at),
+                    } for task in tasks
+                ]
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    def re_predict(self, real_radius: float, img_name: str, unit: str, conf: float, iou: float, db: Session = Depends(get_session), current_user: dict = Depends(AuthRouter.get_current_user)):
+        try:
+            img = DatabaseService.get_img_from_minio(img_name)
+            if not img:
+                raise HTTPException(status_code=404, detail="Image not found in MinIO")
+            
+            img_metadata = DatabaseService.get_img_metadata_by_name(db, img_name)
+            if not img_metadata:
+                raise HTTPException(status_code=404, detail="Image metadata not found")
+
+            async_result = predict_task.delay(img, real_radius, unit, conf, iou)
+
+            DatabaseService.create_user_task(db=db, user_id=current_user.id, img_metadata_id=img_metadata.id, task_id=async_result.id)
+            if not img:
+                raise HTTPException(status_code=404, detail="Image not found in MinIO")
+            
+            return {"task_id": async_result.id}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+        
+    async def get_prediction(self, task_id: str, db: Session = Depends(get_session), current_user: dict = Depends(AuthRouter.get_current_user)):
+        try:
+
+            prediction, masks, metrics, img = await self._fetch_prediction_data(task_id, db)
+            
+            overlaid_img = Model.get_overlaid_mask(image=img, masks=masks)
+            cdf_chart = Model.draw_cdf_chart(diameters=metrics, is_calibrated=prediction.is_calibrated, unit=prediction.unit)
+
+            buffer = io.BytesIO()
+            Image.fromarray(overlaid_img.astype(np.uint8)).save(buffer, format="PNG")
+            overlaid_img_b64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
+
+            chart_buffer = io.BytesIO()
+            cdf_chart.save(chart_buffer, format="PNG")
+            cdf_chart_b64 = base64.b64encode(chart_buffer.getvalue()).decode("utf-8")
+
+            response = {
+                'overlaid_image': overlaid_img_b64,
+                'cdf_chart': cdf_chart_b64,
+                'is_calibrated': prediction.is_calibrated,
+                'unit': prediction.unit,
+                'conf': prediction.conf,
+                'iou': prediction.iou
+            }
+            return { 'status': 'success', 'result': response }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+        
+    async def download_results(self, task_id: str, db: Session = Depends(get_session), current_user: dict = Depends(AuthRouter.get_current_user)):
+        try:
+            prediction, masks, metrics, img = await self._fetch_prediction_data(task_id, db)
+            overlaid_image = Model.get_overlaid_mask(image=img, masks=masks)
+            cdf_chart = Model.draw_cdf_chart(diameters=metrics, is_calibrated=prediction.is_calibrated, unit=prediction.unit)
+            return self._generate_zip_response(overlaid_image, cdf_chart, task_id)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+        
+predict_router = PredictRouter().router
+

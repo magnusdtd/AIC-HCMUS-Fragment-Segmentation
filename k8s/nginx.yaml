@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx
-  namespace: aic-hcmus
+  namespace: aic-hcmus-app
 spec:
   replicas: 1
   selector:
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: nginx:latest
+        image: nginx:alpine
         resources:
           requests:
             memory: "128Mi"
@@ -27,30 +27,50 @@ spec:
         - name: nginx-config
           mountPath: /etc/nginx/nginx.conf
           subPath: nginx.conf
+        - name: nginx-ssl
+          mountPath: /etc/nginx/ssl
         ports:
         - containerPort: 80
+        - containerPort: 443
       volumes:
       - name: nginx-config
         configMap:
           name: nginx-config
+      - name: nginx-ssl
+        secret:
+          secretName: nginx-ssl
 
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: nginx-config
-  namespace: aic-hcmus
+  namespace: aic-hcmus-app
 data:
   nginx.conf: |
     events {}
 
     http {
+        upstream app_backend {
+            server app:8080;
+        }
+
         server {
             listen 80;
+            server_name _;
+            return 301 https://$host$request_uri;
+        }
 
-            # Serve other services if needed
+        server {
+            listen 443 ssl;
+            server_name _;
+            ssl_certificate /etc/nginx/ssl/tls.crt;
+            ssl_certificate_key /etc/nginx/ssl/tls.key;
+            ssl_protocols TLSv1.2 TLSv1.3;
+            ssl_ciphers HIGH:!aNULL:!MD5;
+
             location / {
-                proxy_pass http://app:8080/;
+                proxy_pass http://app_backend;
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
                 proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -63,11 +83,15 @@ apiVersion: v1
 kind: Service
 metadata:
   name: nginx
-  namespace: aic-hcmus
+  namespace: aic-hcmus-app
 spec:
   type: LoadBalancer
   ports:
-  - port: 80
+  - name: https
+    port: 443
+    targetPort: 443
+  - name: http
+    port: 80
     targetPort: 80
   selector:
     app: nginx
