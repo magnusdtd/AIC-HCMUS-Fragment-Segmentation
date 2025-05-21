@@ -1,6 +1,6 @@
 # 🚀 AIC-HCMUS Fragment Segmentation
 
-Welcome to **AIC-HCMUS Fragment Segmentation**—your all-in-one solution for analyzing and reconstructing document fragments and broken objects. Powered by cutting-edge computer vision and deep learning, our platform delivers precise, reliable results for fragment segmentation and volume estimation.
+Welcome to **AIC-HCMUS Fragment Segmentation**—your all-in-one solution for analyzing and reconstructing document fragments and broken objects. Powered by cutting-edge computer vision and deep learning, our platform delivers precise, reliable results for fragment segmentation and equivalent diameter estimation.
 
 ---
 
@@ -11,20 +11,19 @@ Welcome to **AIC-HCMUS Fragment Segmentation**—your all-in-one solution for an
 - Stylish layouts using **TailwindCSS**
 - Seamless navigation via **React Router**
 - Secure user authentication (login/register)
-- Effortless image upload, prediction, and result visualization (overlaid masks, volume data)
-- Modular components: Predict, UserImages, Tabs, and more
+- Effortless image upload, prediction, and result visualization (overlaid masks, equivalent diameter data)
 
 ### ⚡ Backend
 - Fast, scalable API with **FastAPI**
 - JWT-based authentication
 - Endpoints for uploading images, running predictions, and retrieving results
-- Integrated with **YOLOv11m** for segmentation & volume calculation
+- Integrated with **YOLOv11m** for segmentation & equivalent diameter calculation
 - Data stored in **PostgreSQL**; images & masks in **MinIO**
 
 ### 🤖 Machine Learning
-- State-of-the-art **YOLOv11m** segmentation model (from Hugging Face)
-- Automatic calibration object detection (e.g., red balls) for accurate volume estimation
-- Generates overlaid masks and computes object volumes
+- State-of-the-art **YOLOv11m** segmentation model
+- Automatic calibration object detection (e.g., red balls) for accurate equivalent diameter estimation
+- Generates overlaid masks and computes object equivalent diameters
 
 ### ☁️ Infrastructure
 - **Docker Compose** for easy local setup
@@ -35,3 +34,4 @@ Welcome to **AIC-HCMUS Fragment Segmentation**—your all-in-one solution for an
 ## 🗺️ System Architecture
 
 ![System Architecture Diagram](assets/app-architecture.jpg)
+

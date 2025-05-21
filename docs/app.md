@@ -16,7 +16,7 @@
 - **Analysis Process**:
     - YOLOv11 segmentation model identifies individual rock fragments
     - Precise masks are generated for each fragment
-    - Volume calculations apply geometric algorithms to each mask
+    - Equivalent diameter calculations apply geometric algorithms to each mask
     - Results display includes color-coded overlays for visual identification
 
 ### 3. Result Management
@@ -33,14 +33,14 @@
 ### 2. Processing Pipeline
 - FastAPI processes image uploads and manages temporary storage
 - YOLOv11 model (from Hugging Face Hub) performs segmentation
-- OpenCV handles image processing and volume calculations
+- OpenCV handles image processing and equivalent diameter calculations
 - Results flow: Upload → Processing → Database Storage → User Display
 
 ### 3. Data Infrastructure
 - **PostgreSQL Database**:
     - Stores user profiles, authentication data
     - Maintains image metadata and analysis results
-    - Interaction via SQLAlchemy ORM with Alembic migrations
+    - Interaction via SQLAlchemy ORM
 - **Storage System (MinIO)**:
     - S3-compatible object storage for binary data
     - Original images preserved for reference
@@ -63,7 +63,6 @@
 
 ### 6. Monitoring & Observability
 - **Performance Monitoring**: Prometheus metrics with Grafana dashboards
-- **Logging**: ELK stack (Elasticsearch, Logstash, Kibana)
 - **Alerting**: Automated notifications for system issues
 
 ### 7. Security Framework
@@ -71,9 +70,3 @@
 - Role-based access control system
 - Secure credential storage and transmission
 
-### 8. API Structure
-- Key endpoints:
-    - **Authentication**: `/api/auth/*`
-    - **Basic Upload**: `/api/upload`
-    - **Process & Analyze**: `/api/upload_predict`
-    - **Result Retrieval**: `/api/fetch_prediction`

@@ -8,7 +8,7 @@ Hướng dẫn này giải thích cách sử dụng ứng dụng Phân Đoạn M
 
 - Đã cài đặt Docker và Docker Compose
 - Trình duyệt web hiện đại (cho giao diện frontend)
-- (Tùy chọn) Python 3.10+ và Node.js (nếu cài đặt thủ công)
+- (Tùy chọn) Python 3.10+ và Node.js
 
 ---
 
@@ -21,79 +21,63 @@ Hướng dẫn này giải thích cách sử dụng ứng dụng Phân Đoạn M
    git clone https://github.com/magnusdtd/AIC-HCMUS-Fragment-Segmentation.git
    cd AIC-HCMUS-Fragment-Segmentation
    ```
+2. Tạo chứng chỉ SSL cho nginx:
+   - Generate a self-signed SSL certificate (openssl is required):
+     ```sh
+     mkdir -p nginx-ssl
+     openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+       -keyout nginx-ssl/tls.key \
+       -out nginx-ssl/tls.crt \
+       -subj "/C=US/ST=State/L=City/O=Organization/OU=Unit/CN=localhost"
+     ```
 
-2. Khởi động tất cả services:
+3. Khởi động tất cả các dịch vụ:
    ```sh
-   docker-compose up --build
+   docker compose up --build
    ```
 
-3. Truy cập website tại [http://localhost](http://localhost)  
+4. Truy cập giao diện frontend tại [http://localhost:443](http://localhost)  
 
 ---
 
-## 3. Cài Đặt Thủ Công (Phát Triển)
+## 3. Các Tính Năng Ứng Dụng
 
-### Backend
-
-1. Cài đặt các dependencies:
-   ```
-   cd backend
-   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu && \
-   pip install ultralytics --no-deps && \
-   pip install -r requirements.txt
-   ```
-
-2. Khởi động máy chủ FastAPI:
-   ```
-   uvicorn app.main:app --reload
-   ```
-
-### Frontend
-
-1. Cài đặt các dependencies:
-   ```
-   cd frontend
-   npm install
-   ```
-
-2. Khởi động máy chủ phát triển:
-   ```
-   npm run dev
-   ```
-
----
-
-## 4. Quy Trình Sử Dụng
-
-### 1. Đăng Ký và Đăng Nhập
-
+### Đăng Ký
 - Mở ứng dụng web.
-- Đăng ký tài khoản mới hoặc đăng nhập bằng tài khoản đã có.
+- Nhấn nút đăng ký để chuyển đến trang đăng ký.
+- Nhập tên người dùng và mật khẩu của bạn.
+- Trang sẽ tự động chuyển hướng đến trang mặc định.
 
-### 2. Tải Ảnh Lên
+![Đăng Ký Thủ Công](assets/register.jpg)
 
-- Chuyển đến trang dự đoán.
+### 2. Đăng Nhập
+
+#### 2.1. Đăng Nhập Thủ Công
+
+![Đăng Nhập Thủ Công](assets/manual_login.jpg)
+
+#### 2.2. Đăng Nhập Bằng Google
+
+![Đăng Nhập Google](assets/google_login.jpg)
+
+### 3. Tải Ảnh Lên và Dự Đoán
+
+- Sau khi đăng nhập vào ứng dụng, chuyển đến tab dự đoán.
+![Tab Dự Đoán](assets/predict.jpg)
 - Tải lên một tệp ảnh (ví dụ: ảnh mảnh vỡ).
+- Điều chỉnh các giá trị bán kính thực, đơn vị, độ tin cậy (conf), hoặc Intersection over Union (iou) nếu cần.
 - Gửi để nhận kết quả phân đoạn.
 
-### 3. Xem Kết Quả
+![Kết Quả Phân Đoạn 1](assets/result_1.jpg)
+![Kết Quả Phân Đoạn 2](assets/result_2.jpg)
 
-- Kết quả phân đoạn sẽ hiển thị trên trang.
-- Bạn có thể xem lại ảnh đã tải lên và kết quả trong trang cá nhân.
+### 4. Xem Ảnh Đã Tải Lên
 
----
-
-## 5. Sử Dụng API
-
-- Xem [Tài liệu API](api.md) để biết chi tiết về các endpoint và định dạng yêu cầu.
-
----
-
-## 6. Khắc Phục Sự Cố
-
-- Đảm bảo các container Docker đang chạy (`docker ps`).
-- Kiểm tra log để tìm lỗi (`docker-compose logs`).
-- Nếu cài đặt thủ công, kiểm tra đã cài đủ các thư viện phụ thuộc.
+- Tab ảnh chứa tất cả các ảnh đã tải lên của người dùng.
+![Ảnh Người Dùng](assets/images.jpg)
+- Nhấn vào từng ảnh để xem chi tiết của ảnh.
+![Chi Tiết Ảnh](assets/image_details.jpg)
+- Sử dụng nút xem để xem chi tiết dự đoán và nút tải xuống để tải các tệp kết quả.
 
 ---
 
