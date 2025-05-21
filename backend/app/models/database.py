@@ -41,8 +41,7 @@ class ImageMetadata(SQLModel, table=True):
     user: "User" = Relationship(back_populates="images")
 
 class UserTask(SQLModel, table=True):
-    id: int = Field(default=None, primary_key=True)
-    task_id: str = Field(nullable=False, unique=True)
+    task_id: str = Field(nullable=False, primary_key=True, unique=True)
     img_id: int = Field(foreign_key="imagemetadata.id", nullable=False)
     user_id: int = Field(foreign_key="user.id", nullable=False)
     created_at: datetime = Field(default_factory=datetime.now)
@@ -54,3 +53,6 @@ class Prediction(SQLModel, table=True):
     mask_key: str = Field(nullable=False)  
     metrics_key: str = Field(nullable=False)  
     is_calibrated: bool = Field(nullable=False)
+    unit: str = Field(nullable=False)
+    conf: float = Field(nullable=False)
+    iou: float = Field(nullable=False)

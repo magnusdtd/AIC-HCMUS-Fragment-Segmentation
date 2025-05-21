@@ -115,16 +115,13 @@ export default function Main(props: { skills: { name: string; logo: string }[] }
         transition={{ delay: 0.4, duration: 0.8, ease: 'easeInOut' }}
         className="w-full max-w-4xl mx-auto px-4 py-8"
       >
-        <h2 className="text-2xl md:text-4xl font-bold mb-4 text-center">Guide Video</h2>
-        <div className="aspect-video rounded-lg overflow-hidden shadow-lg bg-black">
-          <iframe
-            className="w-full h-full"
-            src="https://www.youtube-nocookie.com/embed/Ej9QgA6HQYQ?si=tSBggf0-YrWHzKvV"
-            title="YouTube video player"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-            referrerPolicy="strict-origin-when-cross-origin"
-            allowFullScreen
-          ></iframe>
+        <h3 className="text-xl md:text-3xl font-bold mb-4 text-center">This app use model to detect rock fragments in images</h3>
+        <div className="rounded-lg overflow-hidden shadow-lg bg-white dark:bg-black flex items-center justify-center">
+          <img
+            src="illustration.jpg"
+            alt="Guide Video Thumbnail"
+            className="w-full h-full object-contain"
+          />
         </div>
       </motion.div>
 

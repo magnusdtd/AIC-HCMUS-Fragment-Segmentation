@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import api from '../services/api';
-import Card from '@mui/material/Card';
-import CardContent from '@mui/material/CardContent';
+import ImageCard from './ImageCard';
+import ImageDetails from './ImageDetails';
 
 interface Image {
   filename: string;
@@ -10,10 +10,17 @@ interface Image {
   url?: string; 
 }
 
+interface Task {
+  task_id: string;
+  created_at: string;
+}
+
 function UserImages() {
-  const [images, setImages] = useState<Image[]>([]); 
+  const [images, setImages] = useState<Image[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tasks, setTasks] = useState<Record<string, Task[]>>({});
+  const [selectedImage, setSelectedImage] = useState<Image | null>(null);
 
   useEffect(() => {
     const fetchImages = async () => {
@@ -25,12 +32,11 @@ function UserImages() {
 
         const imagesData = response.data.images;
 
-        // Fetch each image's data from the server
         const imagesWithUrls = await Promise.all(
           imagesData.map(async (image: Image) => {
             try {
               const imageResponse = await api.get(`/api/fetch_image/${image.filename}`, {
-                responseType: 'blob', // Fetch as binary data
+                responseType: 'blob',
               });
               const imageUrl = URL.createObjectURL(imageResponse.data); 
               return { ...image, url: imageUrl };
@@ -42,6 +48,20 @@ function UserImages() {
         );
 
         setImages(imagesWithUrls);
+
+        const tasksData: Record<string, Task[]> = {};
+        for (const image of imagesData) {
+          try {
+            const tasksResponse = await api.get(`/api/get_user_tasks?img_id=${image.id}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            tasksData[image.filename] = tasksResponse.data.tasks;
+          } catch (err) {
+            console.error(`Error fetching tasks for image ${image.filename}:`, err);
+            tasksData[image.filename] = [];
+          }
+        }
+        setTasks(tasksData);
       } catch (err) {
         console.error('Error fetching images:', err);
         setError('Failed to load images.');
@@ -68,6 +88,16 @@ function UserImages() {
     );
   }
 
+  if (selectedImage) {
+    return (
+      <ImageDetails
+        image={selectedImage}
+        tasks={tasks[selectedImage.filename] || []}
+        onBack={() => setSelectedImage(null)}
+      />
+    );
+  }
+
   if (images.length === 0) {
     return (
       <div className='flex items-center text-2xl font-sans justify-center h-screen bg-white dark:bg-gray-900'>
@@ -81,23 +111,11 @@ function UserImages() {
       <h2 className="text-2xl font-bold mt-4 mb-4 text-gray-900 dark:text-white">Your Images</h2>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {images.map((image, index) => (
-          <Card key={index} sx={{ maxWidth: 512 }} >
-            <CardContent className='flex flex-col items-center'>
-              {image.url ? (
-                <img
-                  src={image.url}
-                  alt={image.filename}
-                  className="w-full h-auto"
-                  style={{ objectFit: 'contain' }}
-                />
-              ) : (
-                <div className="text-red-500 dark:text-red-400">Failed to load image</div>
-              )}
-              <p className="mt-2 text-sm text-gray-900 dark:text-black">{image.filename}</p>
-              <p className="text-xs text-gray-700 dark:text-black">Size: {image.size} bytes</p>
-              <p className="text-xs text-gray-700 dark:text-black">Uploaded: {new Date(image.upload_time).toLocaleString()}</p>
-            </CardContent>
-          </Card>
+          <ImageCard
+            key={index}
+            image={image}
+            onClick={() => setSelectedImage(image)}
+          />
         ))}
       </div>
     </div>
