@@ -34,4 +34,4 @@ Welcome to **AIC-HCMUS Fragment Segmentation**—your all-in-one solution for an
 
 ## 🗺️ System Architecture
 
-![System Architecture Diagram](assets/diagram.jpg)
+![System Architecture Diagram](assets/app-architecture.jpg)
