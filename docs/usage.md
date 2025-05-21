@@ -21,8 +21,7 @@ This guide explains how to use the AIC-HCMUS Fragment Segmentation application, 
    git clone https://github.com/magnusdtd/AIC-HCMUS-Fragment-Segmentation.git
    cd AIC-HCMUS-Fragment-Segmentation
    ```
-2. Create nginx SSL certificate:
-   - Generate a self-signed SSL certificate (openssl is required):
+2. Generate a self-signed SSL certificate (openssl is required):
      ```sh
      mkdir -p nginx-ssl
      openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
