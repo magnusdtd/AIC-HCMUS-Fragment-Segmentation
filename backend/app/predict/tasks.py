@@ -40,12 +40,16 @@ def tolist_safe(x):
         return x
 
 @celery_app.task
-def predict_task(file_content):
+def predict_task(file_content, real_radius: float = None, unit: str = 'pixels', conf: float=0.5, iou: float=0.5):
     try:
         image = Image.open(io.BytesIO(file_content)).convert("RGBA")
 
         # Run the prediction
-        masks, overlaid_img, metrics, cdf_chart, is_calibrated = run_coro(model.predict(image))
+        masks, overlaid_img, metrics, cdf_chart, is_calibrated = run_coro(
+            model.predict(image, real_radius, unit, conf, iou)
+        )
+        if not is_calibrated:
+            unit = "pixels"
 
         # Convert the overlaid image to base64
         buffer = io.BytesIO()
@@ -63,7 +67,10 @@ def predict_task(file_content):
             "overlaid_image": overlaid_img_b64,
             "cdf_chart": cdf_chart_b64,
             "metrics": tolist_safe(metrics),
-            "is_calibrated": is_calibrated
+            "is_calibrated": is_calibrated,
+            "unit": unit,
+            "conf": conf,
+            "iou": iou
         }
 
     except Exception as e:

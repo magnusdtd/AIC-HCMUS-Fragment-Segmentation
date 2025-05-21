@@ -53,3 +53,6 @@ class Prediction(SQLModel, table=True):
     mask_key: str = Field(nullable=False)  
     metrics_key: str = Field(nullable=False)  
     is_calibrated: bool = Field(nullable=False)
+    unit: str = Field(nullable=False)
+    conf: float = Field(nullable=False)
+    iou: float = Field(nullable=False)

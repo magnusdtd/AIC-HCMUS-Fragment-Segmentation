@@ -17,6 +17,10 @@ function Predict() {
   const [cdfChart, setCdfChart] = useState<string | null>(null);
   const [isCalibrated, setIsCalibrated] = useState<boolean | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [realRadius, setRealRadius] = useState<string>("50"); // Merged realRadius and realRadiusInput into a single state
+  const [unit, setUnit] = useState<string>("cm"); // New state for unit
+  const [conf, setConf] = useState<number>(0.5); // Default confidence value
+  const [iou, setIou] = useState<number>(0.5); // Default IoU value
 
   const [searchParams] = useSearchParams();
   const imageFilename = searchParams.get("image");
@@ -55,7 +59,7 @@ function Predict() {
     onDrop,
     multiple: false,
     accept: { 'image/*': [] },
-    disabled: isProcessing, // Disable drag & drop when processing
+    disabled: isProcessing,
   });
 
   // Handle file upload and get task_id
@@ -66,7 +70,7 @@ function Predict() {
       return;
     }
 
-    setIsProcessing(true); // Set processing state to true
+    setIsProcessing(true);
 
     try {
       const token = localStorage.getItem("token");
@@ -77,14 +81,15 @@ function Predict() {
       });
 
       if (checkResponse.data.exists) {
-        // If the image exists, use the re-predict API
-        const rePredictResponse = await api.get<{ task_id: string }>(`/api/re_predict?img_name=${imageFilename || file?.name}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const rePredictResponse = await api.get<{ task_id: string }>(
+          `/api/re_predict/${realRadius}&${imageFilename || file?.name}&${unit}&${conf}&${iou}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
         setTaskId(rePredictResponse.data.task_id);
         setMessage("Trying to re-predict...");
       } else {
-        // If the image does not exist, upload it
         const formData = new FormData();
         if (file) {
           formData.append("file", file);
@@ -92,12 +97,16 @@ function Predict() {
           formData.append("imageFilename", imageFilename);
         }
 
-        const uploadResponse = await api.post<{ task_id: string }>("/api/upload_predict", formData, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const uploadResponse = await api.post<{ task_id: string }>(
+          `/api/upload_predict/${realRadius}&${unit}&${conf}&${iou}`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
         setTaskId(uploadResponse.data.task_id);
         setMessage("File uploaded successfully. Task is processing...");
@@ -168,6 +177,22 @@ function Predict() {
     }
   }, [taskId]);
 
+  const handleRealRadiusChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setRealRadius(e.target.value);
+  };
+
+  const handleUnitChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setUnit(e.target.value);
+  };
+
+  const handleConfChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setConf(parseFloat(e.target.value));
+  };
+
+  const handleIouChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIou(parseFloat(e.target.value));
+  };
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-gray-900">
       <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">Predict</h2>
@@ -185,6 +210,74 @@ function Predict() {
             <p className="text-gray-700 dark:text-gray-200">Drag & drop an image here, or click to select a file</p>
           )}
         </div>
+
+        {/* Real Radius Input */}
+        <div className="mb-4">
+          <label htmlFor="realRadiusInput" className="block text-gray-700 dark:text-gray-200 mb-2">
+            Real Radius:
+          </label>
+          <input
+            id="realRadiusInput"
+            type="text"
+            value={realRadius}
+            onChange={handleRealRadiusChange}
+            className="w-full px-3 py-2 border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+            placeholder="Enter real radius"
+          />
+        </div>
+
+        {/* Unit Selection */}
+        <div className="mb-4">
+          <label htmlFor="unit" className="block text-gray-700 dark:text-gray-200 mb-2">
+            Unit:
+          </label>
+          <select
+            id="unit"
+            value={unit}
+            onChange={handleUnitChange}
+            className="w-full px-3 py-2 border rounded dark:bg-gray-800 dark:border-gray-600 dark:text-white"
+          >
+            <option value="m">m</option>
+            <option value="dm">dm</option>
+            <option value="cm">cm</option>
+            <option value="mm">mm</option>
+          </select>
+        </div>
+
+        {/* Confidence Slider */}
+        <div className="mb-4">
+          <label htmlFor="confSlider" className="block text-gray-700 dark:text-gray-200 mb-2">
+            Confidence (Conf): {conf}
+          </label>
+          <input
+            id="confSlider"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={conf}
+            onChange={handleConfChange}
+            className="w-full"
+          />
+        </div>
+
+        {/* IoU Slider */}
+        <div className="mb-4">
+          <label htmlFor="iouSlider" className="block text-gray-700 dark:text-gray-200 mb-2">
+            Intersection over Union (IoU): {iou}
+          </label>
+          <input
+            id="iouSlider"
+            type="range"
+            min="0"
+            max="1"
+            step="0.01"
+            value={iou}
+            onChange={handleIouChange}
+            className="w-full"
+          />
+        </div>
+
         <div className="flex justify-center items-center gap-4">
           <Tooltip title="Click to run the model and get predictions for your image!" arrow placement="left">
             <button

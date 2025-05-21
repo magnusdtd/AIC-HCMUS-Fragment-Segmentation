@@ -20,7 +20,7 @@ interface ImageDetailsProps {
 
 const ImageDetails: React.FC<ImageDetailsProps> = ({ image, tasks, onBack }) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [predictionDetails, setPredictionDetails] = useState<{ overlaidImage: string; cdfChart: string } | null>(null);
+  const [predictionDetails, setPredictionDetails] = useState<{ overlaidImage: string; cdfChart: string; conf?: number; iou?: number } | null>(null);
   const navigate = useNavigate(); 
 
   const handleDownload = async (taskId: string) => {
@@ -52,8 +52,8 @@ const ImageDetails: React.FC<ImageDetailsProps> = ({ image, tasks, onBack }) => 
         console.error("Result attribute is missing in the API response");
         return;
       }
-      const { overlaid_image, cdf_chart } = response.data.result;
-      setPredictionDetails({ overlaidImage: overlaid_image, cdfChart: cdf_chart });
+      const { overlaid_image, cdf_chart, conf, iou } = response.data.result;
+      setPredictionDetails({ overlaidImage: overlaid_image, cdfChart: cdf_chart, conf, iou });
       setSelectedTask(tasks.find((task) => task.task_id === taskId) || null);
     } catch (error) {
       console.error('Error fetching prediction details:', error);
@@ -129,6 +129,8 @@ const ImageDetails: React.FC<ImageDetailsProps> = ({ image, tasks, onBack }) => 
             <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-1 text-center">Prediction Details</h3>
             <p className="text-xs text-center text-gray-700 dark:text-white">Task ID: {selectedTask.task_id}</p>
             <p className="text-xs text-center text-gray-700 dark:text-white">Created At: {new Date(selectedTask.created_at).toLocaleString()}</p>
+            <p className="text-xs text-center text-gray-700 dark:text-white">Confidence: {predictionDetails.conf}</p>
+            <p className="text-xs text-center text-gray-700 dark:text-white">IoU: {predictionDetails.iou}</p>
             <div className="flex flex-col items-center mt-5">
               <img
                 src={`data:image/png;base64,${predictionDetails.overlaidImage}`}

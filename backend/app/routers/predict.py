@@ -1,4 +1,4 @@
-from fastapi import APIRouter, UploadFile, HTTPException, Depends, Query
+from fastapi import APIRouter, UploadFile, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from app.models.database import get_session
 from app.routers.auth import AuthRouter
@@ -18,11 +18,11 @@ class PredictRouter:
 
     def _setup_routes(self):
         self.router.post('/upload')(self.upload_image)
-        self.router.post('/upload_predict')(self.upload_and_predict)
+        self.router.post('/upload_predict/{real_radius}&{unit}&{conf}&{iou}')(self.upload_and_predict)
         self.router.get('/task_status/{task_id}')(self.get_task_status)
         self.router.get('/fetch_prediction/{task_id}')(self.fetch_prediction)
         self.router.get('/get_user_tasks')(self.get_user_tasks)
-        self.router.get('/re_predict')(self.re_predict)
+        self.router.get('/re_predict/{real_radius}&{img_name}&{unit}&{conf}&{iou}')(self.re_predict)
         self.router.get('/get_prediction/{task_id}')(self.get_prediction)
         self.router.get('/download_results/{task_id}')(self.download_results)
 
@@ -88,11 +88,11 @@ class PredictRouter:
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-    async def upload_and_predict(self, file: UploadFile, db: Session = Depends(get_session), current_user: dict = Depends(AuthRouter.get_current_user)):
+    async def upload_and_predict(self, real_radius: int, unit: str, conf: float, iou: float, file: UploadFile, db: Session = Depends(get_session), current_user: dict = Depends(AuthRouter.get_current_user)):
         try:
             img_metadata = await DatabaseService.create_img_metadata(db, current_user, file)
             content = await file.read()
-            async_result = predict_task.delay(content)
+            async_result = predict_task.delay(content, real_radius, unit, conf, iou)
             DatabaseService.create_user_task(db=db, user_id=current_user.id, img_metadata_id=img_metadata.id, task_id=async_result.id)
             return {"task_id": async_result.id}
         except HTTPException:
@@ -117,7 +117,10 @@ class PredictRouter:
                     task_id=task_id,
                     masks=task_result.get('masks'),
                     metrics=task_result.get('metrics'),
-                    is_calibrated=task_result.get('is_calibrated')
+                    is_calibrated=task_result.get('is_calibrated'),
+                    unit=task_result.get('unit', None),
+                    conf=task_result.get('conf'),
+                    iou=task_result.get('iou')
                 )
                 response = {
                     'overlaid_image': task_result.get('overlaid_image'),
@@ -151,7 +154,7 @@ class PredictRouter:
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
-    def re_predict(self, img_name: str = Query(...), db: Session = Depends(get_session), current_user: dict = Depends(AuthRouter.get_current_user)):
+    def re_predict(self, real_radius: float, img_name: str, unit: str, conf: float, iou: float, db: Session = Depends(get_session), current_user: dict = Depends(AuthRouter.get_current_user)):
         try:
             img = DatabaseService.get_img_from_minio(img_name)
             if not img:
@@ -160,8 +163,8 @@ class PredictRouter:
             img_metadata = DatabaseService.get_img_metadata_by_name(db, img_name)
             if not img_metadata:
                 raise HTTPException(status_code=404, detail="Image metadata not found")
-            
-            async_result = predict_task.delay(img)
+
+            async_result = predict_task.delay(img, real_radius, unit, conf, iou)
 
             DatabaseService.create_user_task(db=db, user_id=current_user.id, img_metadata_id=img_metadata.id, task_id=async_result.id)
             if not img:
@@ -176,9 +179,8 @@ class PredictRouter:
 
             prediction, masks, metrics, img = await self._fetch_prediction_data(task_id, db)
             
-
             overlaid_img = Model.get_overlaid_mask(image=img, masks=masks)
-            cdf_chart = Model.draw_cdf_chart(diameters=metrics)
+            cdf_chart = Model.draw_cdf_chart(diameters=metrics, is_calibrated=prediction.is_calibrated, unit=prediction.unit)
 
             buffer = io.BytesIO()
             Image.fromarray(overlaid_img.astype(np.uint8)).save(buffer, format="PNG")
@@ -188,11 +190,13 @@ class PredictRouter:
             cdf_chart.save(chart_buffer, format="PNG")
             cdf_chart_b64 = base64.b64encode(chart_buffer.getvalue()).decode("utf-8")
 
-            
             response = {
                 'overlaid_image': overlaid_img_b64,
                 'cdf_chart': cdf_chart_b64,
                 'is_calibrated': prediction.is_calibrated,
+                'unit': prediction.unit,
+                'conf': prediction.conf,
+                'iou': prediction.iou
             }
             return { 'status': 'success', 'result': response }
         except Exception as e:
@@ -200,9 +204,9 @@ class PredictRouter:
         
     async def download_results(self, task_id: str, db: Session = Depends(get_session), current_user: dict = Depends(AuthRouter.get_current_user)):
         try:
-            _, masks, metrics, img = await self._fetch_prediction_data(task_id, db)
+            prediction, masks, metrics, img = await self._fetch_prediction_data(task_id, db)
             overlaid_image = Model.get_overlaid_mask(image=img, masks=masks)
-            cdf_chart = Model.draw_cdf_chart(diameters=metrics)
+            cdf_chart = Model.draw_cdf_chart(diameters=metrics, is_calibrated=prediction.is_calibrated, unit=prediction.unit)
             return self._generate_zip_response(overlaid_image, cdf_chart, task_id)
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))

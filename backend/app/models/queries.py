@@ -47,7 +47,7 @@ class DatabaseService:
         return metadata
 
     @staticmethod
-    async def create_prediction(db: Session, task_id: str, masks: np.ndarray, metrics: np.ndarray, is_calibrated: bool = False) -> Prediction:
+    async def create_prediction(db: Session, task_id: str, masks: np.ndarray, metrics: np.ndarray, is_calibrated: bool = False, unit: str = 'pixels', conf: float = 0.5, iou: float = 0.5) -> Prediction:
         serialized_masks = pickle.dumps(masks)
         serialized_metrics = pickle.dumps(metrics)
 
@@ -75,7 +75,10 @@ class DatabaseService:
             task_id=task_id,
             mask_key=binary_mask_key,
             metrics_key=metrics_key,
-            is_calibrated=is_calibrated
+            is_calibrated=is_calibrated,
+            unit=unit,
+            conf=conf,
+            iou=iou
         )
 
         db.add(prediction)
