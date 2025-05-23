@@ -1,6 +1,8 @@
 from sqlmodel import SQLModel, Field, create_engine, Session, Relationship
 from datetime import datetime
 import os
+from pydantic import validator
+import re
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
@@ -25,6 +27,20 @@ class User(SQLModel, table=True):
 
     images: list["ImageMetadata"] = Relationship(back_populates="user")
     tasks: list["UserTask"] = Relationship(back_populates="user")
+
+    @validator("username")
+    def validate_username(cls, value):
+        if not (3 <= len(value) <= 50):
+            raise ValueError("Username must be between 3 and 50 characters long.")
+        if not re.match(r"^\w+$", value):
+            raise ValueError("Username can only contain letters, numbers, and underscores.")
+        return value
+
+    @validator("password")
+    def validate_password(cls, value):
+        if len(value) < 6:
+            raise ValueError("Password must be at least 6 characters long.")
+        return value
 
 class LoginRequest(SQLModel):
     username: str

@@ -79,8 +79,7 @@ services:
   celery:
     build:
       context: .
-      dockerfile: Dockerfile
-    command: celery -A app.predict.tasks.celery_app worker --loglevel=info --concurrency=1 --without-gossip --without-mingle --without-heartbeat
+      dockerfile: ./backend/app/predict/Dockerfile
     depends_on:
       - app
       - redis

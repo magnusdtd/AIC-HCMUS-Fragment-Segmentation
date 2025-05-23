@@ -10,6 +10,21 @@ function Register() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Client-side validation
+    if (username.length < 3 || username.length > 50) {
+      setMessage("Username must be between 3 and 50 characters long.");
+      return;
+    }
+    if (!/^\w+$/.test(username)) {
+      setMessage("Username can only contain letters, numbers, and underscores.");
+      return;
+    }
+    if (password.length < 6) {
+      setMessage("Password must be at least 6 characters long.");
+      return; 
+    }
+
     try {
       const response = await api.post<{ message: string }>("/api/auth/register", { username, password });
       setMessage(response.data.message);

@@ -15,17 +15,8 @@ prometheus_fastapi_instrumentator==7.1.0
 authlib==1.5.2
 httpx==0.28.1
 itsdangerous==2.2.0
-
-# Ultralytics dependencies
 numpy==2.1.2
 matplotlib==3.10.3
-pandas==2.2.3
-pyyaml==6.0.2
 pillow==11.0.0
-psutil==7.0.0
 requests==2.32.3
-tqdm==4.67.1
-scipy==1.15.3
-seaborn==0.13.2
-ultralytics-thop==2.0.14
 opencv-python-headless==4.11.0.86
