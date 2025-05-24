@@ -1,7 +1,7 @@
 pipeline {
     agent any
     environment {
-        GOOGLE_CREDENTIALS = credentials('gcp-service-account')
+        GOOGLE_APPLICATION_CREDENTIALS = credentials('gcp-service-account')
         CLUSTER_NAME = 'my-gke-cluster'
         CLUSTER_ZONE = 'us-central1'
         PROJECT_ID = 'aic-hcmus'
@@ -50,8 +50,7 @@ pipeline {
         stage('Authenticate to GCP') {
             steps {
                 sh '''
-                echo $GOOGLE_CREDENTIALS > gcp-creds.json
-                gcloud auth activate-service-account --key-file=gcp-creds.json
+                gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS
                 gcloud config set project $PROJECT_ID
                 '''
             }
