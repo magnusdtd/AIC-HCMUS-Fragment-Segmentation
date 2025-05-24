@@ -17,10 +17,10 @@ function Predict() {
   const [cdfChart, setCdfChart] = useState<string | null>(null);
   const [isCalibrated, setIsCalibrated] = useState<boolean | null>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [realRadius, setRealRadius] = useState<string>("50"); // Merged realRadius and realRadiusInput into a single state
-  const [unit, setUnit] = useState<string>("cm"); // New state for unit
-  const [conf, setConf] = useState<number>(0.5); // Default confidence value
-  const [iou, setIou] = useState<number>(0.5); // Default IoU value
+  const [realRadius, setRealRadius] = useState<string>("50");
+  const [unit, setUnit] = useState<string>("cm");
+  const [conf, setConf] = useState<number>(0.5);
+  const [iou, setIou] = useState<number>(0.5);
 
   const [searchParams] = useSearchParams();
   const imageFilename = searchParams.get("image");
@@ -344,7 +344,7 @@ function Predict() {
       {/* Display whether the image is calibrated or not */}
       {isCalibrated !== null && (
         <p className="mt-4 text-gray-900 dark:text-white">
-          Model Calibration: {" "}
+          Calibration: {" "}
           <span className={isCalibrated ? "text-green-500 dark:text-green-400" : "text-red-500 dark:text-red-400"}>
             {isCalibrated
               ? "This image contains a calibrated object."

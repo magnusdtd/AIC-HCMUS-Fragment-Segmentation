@@ -1,6 +1,4 @@
 import os, base64
-from ultralytics import YOLO
-from huggingface_hub import hf_hub_download
 import numpy as np
 from PIL import Image
 from random import randint
@@ -13,6 +11,9 @@ class Model:
         repo_id: str = "magnusdtd/aic-hcmus-2025-yolo11m-seg",
         model_filename: str = "yolov11m_finetuned.pt",
     ):
+        from ultralytics import YOLO
+        from huggingface_hub import hf_hub_download
+        
         # Download the model file from Hugging Face Hub
         self.yolo_path = hf_hub_download(
             repo_id=repo_id,
