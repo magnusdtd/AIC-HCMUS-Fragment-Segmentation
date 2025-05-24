@@ -15,7 +15,7 @@ export default function Main(props: { skills: { name: string; logo: string }[] }
         >
           <TextGenerateEffect
             words="GDGoC HCMUS AI Challenge"
-            className="text-4xl md:text-7xl lg:text-[120px] font-bold"
+            className="text-4xl md:text-7xl lg:text-[100px] font-bold"
           />
           <TextGenerateEffect
             words="Rock Fragment Segmentation App"
@@ -77,7 +77,7 @@ export default function Main(props: { skills: { name: string; logo: string }[] }
             <li>Modern <b>React</b> frontend with <b>TypeScript</b> and <b>TailwindCSS</b></li>
             <li>User authentication with JWT</li>
             <li>Image upload, prediction, and overlaid mask visualization</li>
-            <li>Particle Size Distribution (PSD) &amp; CDF chart calculation</li>
+            <li>Equivalent Diameter &amp; CDF chart calculation</li>
             <li>Backend powered by <b>FastAPI</b> and <b>YOLOv11m</b> segmentation</li>
             <li>Async background tasks with <b>Celery</b> and <b>Redis</b></li>
             <li>Object storage via <b>MinIO</b></li>

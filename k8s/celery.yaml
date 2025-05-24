@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: celery
-          image: gcr.io/aic-hcmus/app:latest
+          image: gcr.io/aic-hcmus/celery:latest
           command: ["celery", "-A", "app.predict.tasks.celery_app", "worker", "--loglevel=info", "--concurrency=1", "--without-gossip", "--without-mingle", "--without-heartbeat"]
           env:
             - name: IS_CELERY_WORKER

@@ -9,7 +9,6 @@ env:
   PROJECT_ID: ${{ secrets.PROJECT_ID }}
   CLUSTER_NAME: ${{ secrets.CLUSTER_NAME }}
   REGION: ${{ secrets.REGION }}
-  SERVICE_NAME: app
 
 jobs:
   build-deploy:
@@ -77,15 +76,13 @@ jobs:
     - name: Configure Docker for GCR
       run: gcloud auth configure-docker
 
-    # Step 8: Build Docker image
-    - name: Build Docker image
+    # Step 8: Build and Push Docker images
+    - name: Build and Push Docker images
       run: |
-        docker build -t gcr.io/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest .
-
-    # Step 9: Push Docker image to GCR
-    - name: Push Docker image to GCR
-      run: |
-        docker push gcr.io/${{ secrets.PROJECT_ID }}/${{ env.SERVICE_NAME }}:latest
+        docker build -t gcr.io/${{ secrets.PROJECT_ID }}/app:latest .
+        docker push gcr.io/${{ secrets.PROJECT_ID }}/app:latest
+        docker build -t gcr.io/${{ secrets.PROJECT_ID }}/celery:latest -f backend/app/predict/Dockerfile .
+        docker push gcr.io/${{ secrets.PROJECT_ID }}/celery:latest
 
     # Step 10: Get GKE Cluster Credentials
     - name: Get GKE Cluster Credentials
