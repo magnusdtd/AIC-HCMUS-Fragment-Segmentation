@@ -18,5 +18,5 @@ itsdangerous==2.2.0
 numpy==2.1.2
 matplotlib==3.10.3
 pillow==11.0.0
-requests==2.32.3
+requests==2.32.4
 opencv-python-headless==4.11.0.86
