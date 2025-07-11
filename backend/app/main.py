@@ -1,7 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 from app.models.database import create_db_and_tables
 from app.routers.auth import auth_router
 from app.routers.predict import predict_router
@@ -44,12 +43,6 @@ app.include_router(predict_router, prefix="/api", tags=["predict"])
 app.include_router(display_img_router, prefix="/api", tags=["display_images"])
 app.include_router(google_auth_router, prefix="/api/auth", tags=["auth"])
 
-# Serve static React files
-app.mount("/assets", StaticFiles(directory="app/build/assets"))
-
-@app.get("/")
-def serve_react():
-    return FileResponse("app/build/index.html")
 
 # Catch-all for React routes (SPA)
 @app.get("/{full_path:path}")

@@ -1,15 +1,3 @@
-# Stage 1: Build Frontend
-FROM node:18-alpine AS frontend-builder
-
-WORKDIR /frontend
-
-COPY ./frontend/package*.json ./
-RUN npm ci
-
-COPY ./frontend ./
-RUN npm run build
-
-# Stage 2: Build Backend
 FROM python:3.10-slim AS backend
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -31,8 +19,6 @@ RUN pip install torch torchvision --index-url https://download.pytorch.org/whl/c
     pip install -r requirements.txt
 
 COPY ./backend/app ./app
-
-COPY --from=frontend-builder /frontend/dist ./app/build
 
 EXPOSE 8080
 

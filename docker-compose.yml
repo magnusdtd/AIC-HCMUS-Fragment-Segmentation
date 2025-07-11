@@ -2,7 +2,8 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: backend/Dockerfile
+    image: magnusdtd/aic-hcmus-2025-backend
     ports:
       - "8080:8080"
     depends_on:
@@ -24,6 +25,18 @@ services:
       GOOGLE_CLIENT_SECRET: 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
       SECRET_KEY: this_is_a_secret_key
       REDIS_URL: redis://redis:6379/0
+
+  frontend:
+    build:
+      context: .
+      dockerfile: ./frontend/Dockerfile
+    image: magnusdtd/aic-hcmus-2025-frontend
+    ports:
+      - "8070:8070"
+    networks:
+      - app_network
+    depends_on:
+      - app
 
   db:
     image: postgres:15-alpine
@@ -72,6 +85,7 @@ services:
       - "443:443"
     depends_on:
       - app
+      - frontend
       - minio
     networks:
       - app_network
@@ -80,6 +94,7 @@ services:
     build:
       context: .
       dockerfile: ./backend/app/predict/Dockerfile
+    image: magnusdtd/aic-hcmus-2025-celery
     depends_on:
       - app
       - redis
