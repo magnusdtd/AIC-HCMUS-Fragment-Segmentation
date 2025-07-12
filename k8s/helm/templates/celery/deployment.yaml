@@ -1,0 +1,76 @@
+{{- if .Values.celery.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-celery
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: celery
+spec:
+  replicas: {{ .Values.celery.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: celery
+  template:
+    metadata:
+      labels:
+        {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: celery
+    spec:
+      containers:
+      - name: celery
+        image: {{ include "aic-hcmus-fragment-segmentation.image" (dict "Values" .Values "repository" .Values.celery.image.repository "tag" .Values.celery.image.tag) }}
+        imagePullPolicy: {{ .Values.celery.image.pullPolicy }}
+        command: ["celery", "-A", "app.predict.tasks.celery_app", "worker", "--loglevel=info", "--concurrency={{ .Values.celery.concurrency }}", "--without-gossip", "--without-mingle", "--without-heartbeat"]
+        env:
+        - name: IS_CELERY_WORKER
+          value: "true"
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-config
+              key: REDIS_URL
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-config
+              key: DATABASE_URL
+        - name: MINIO_URL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-config
+              key: MINIO_URL
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-secrets
+              key: MINIO_USER
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-secrets
+              key: MINIO_PASSWORD
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-secrets
+              key: SECRET_KEY
+        resources:
+          {{- toYaml .Values.celery.resources | nindent 10 }}
+        livenessProbe:
+          exec:
+            command: ["celery", "-A", "app.predict.tasks.celery_app", "status"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command: ["celery", "-A", "app.predict.tasks.celery_app", "status"]
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+{{- end }} 

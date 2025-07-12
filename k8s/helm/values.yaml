@@ -1,0 +1,293 @@
+# Production values for aic-hcmus-fragment-segmentation
+
+global:
+  environment: production
+  domain: aic-hcmus-noobers.duckdns.org
+  imagePullPolicy: Always
+
+# Namespace configuration
+namespace:
+  create: false
+  name: aic-hcmus-app
+
+# Backend (FastAPI) configuration
+backend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: magnusdtd/aic-hcmus-2025-backend
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 15
+    targetCPUUtilizationPercentage: 70
+  env:
+    BASE_URL: "https://aic-hcmus-noobers.duckdns.org"
+
+# Frontend (React) configuration
+frontend:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: magnusdtd/aic-hcmus-2025-frontend
+    tag: latest
+    pullPolicy: Always
+  service:
+    type: ClusterIP
+    port: 8070
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 400m
+      memory: 512Mi
+
+# Celery worker configuration
+celery:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: magnusdtd/aic-hcmus-2025-celery
+    tag: latest
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  concurrency: 2
+
+# Database (PostgreSQL) configuration
+database:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "15-alpine"
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 5432
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  persistence:
+    enabled: true
+    storageClass: "standard"
+    size: 10Gi
+  auth:
+    username: user
+    password: password
+    database: mydatabase
+
+# MinIO configuration
+minio:
+  enabled: true
+  image:
+    repository: minio/minio
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    apiPort: 9000
+    consolePort: 9001
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+  persistence:
+    enabled: true
+    storageClass: "standard"
+    size: 10Gi
+  auth:
+    username: minioadmin
+    password: minioadmin
+
+# Redis configuration
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: alpine
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 6379
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 400m
+      memory: 512Mi
+
+# Nginx configuration
+nginx:
+  enabled: true
+  image:
+    repository: nginx
+    tag: alpine
+    pullPolicy: IfNotPresent
+  service:
+    type: LoadBalancer
+    httpPort: 80
+    httpsPort: 443
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  ssl:
+    enabled: true
+    secretName: nginx-ssl
+
+# Monitoring configuration
+monitoring:
+  enabled: true
+  namespace: aic-hcmus-monitor
+  
+  # Prometheus configuration
+  prometheus:
+    enabled: true
+    image:
+      repository: prom/prometheus
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: ClusterIP
+      port: 9090
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    retention: 30d
+    scrapeInterval: 15s
+
+  # Grafana configuration
+  grafana:
+    enabled: true
+    image:
+      repository: grafana/grafana
+      tag: latest
+      pullPolicy: IfNotPresent
+    service:
+      type: LoadBalancer
+      port: 3000
+    resources:
+      requests:
+        cpu: 200m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+    adminPassword: admin
+
+  # Exporters configuration
+  exporters:
+    nodeExporter:
+      enabled: true
+      image:
+        repository: prom/node-exporter
+        tag: latest
+        pullPolicy: IfNotPresent
+      service:
+        type: ClusterIP
+        port: 9100
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+
+    postgresExporter:
+      enabled: true
+      image:
+        repository: prometheuscommunity/postgres-exporter
+        tag: latest
+        pullPolicy: IfNotPresent
+      service:
+        type: ClusterIP
+        port: 9187
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+
+    redisExporter:
+      enabled: true
+      image:
+        repository: oliver006/redis_exporter
+        tag: latest
+        pullPolicy: IfNotPresent
+      service:
+        type: ClusterIP
+        port: 9121
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+
+    celeryExporter:
+      enabled: true
+      image:
+        repository: danihodovic/celery-exporter
+        tag: latest
+        pullPolicy: IfNotPresent
+      service:
+        type: ClusterIP
+        port: 9808
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+
+# Secrets configuration (should be overridden with actual production secrets)
+secrets:
+  googleClientId: "793710439296-m5ufnjhel9fjmkc1g1ua4n6q3ip5hvc4.apps.googleusercontent.com"
+  googleClientSecret: "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"
+  secretKey: "this_is_a_secret_key"
+  dbUser: "user"
+  dbPassword: "password"
+  minioUser: "minioadmin"
+  minioPassword: "minioadmin"
+
+# Ingress configuration
+ingress:
+  enabled: false 

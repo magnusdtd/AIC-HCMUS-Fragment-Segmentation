@@ -1,0 +1,18 @@
+apiVersion: v2
+name: aic-hcmus-fragment-segmentation
+description: A Helm chart for AIC-HCMUS Fragment Segmentation Application
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - ai
+  - computer-vision
+  - fragment-segmentation
+  - fastapi
+  - react
+home: https://magnusdtd.github.io/AIC-HCMUS-Fragment-Segmentation
+sources:
+  - https://github.com/your-org/aic-hcmus-fragment-segmentation
+maintainers:
+  - name: AIC-HCMUS Team
+    email: hcmus.nooobers@gmail.com

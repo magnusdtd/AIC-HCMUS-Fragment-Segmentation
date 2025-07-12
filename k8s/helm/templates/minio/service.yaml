@@ -1,0 +1,24 @@
+{{- if .Values.minio.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-minio
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: minio
+spec:
+  type: {{ .Values.minio.service.type }}
+  ports:
+  - name: api
+    port: {{ .Values.minio.service.apiPort }}
+    targetPort: {{ .Values.minio.service.apiPort }}
+    protocol: TCP
+  - name: console
+    port: {{ .Values.minio.service.consolePort }}
+    targetPort: {{ .Values.minio.service.consolePort }}
+    protocol: TCP
+  selector:
+    {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: minio
+{{- end }} 

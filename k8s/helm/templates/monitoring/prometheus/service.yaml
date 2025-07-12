@@ -1,0 +1,20 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.prometheus.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-prometheus
+  namespace: {{ .Values.monitoring.namespace }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: prometheus
+spec:
+  type: {{ .Values.monitoring.prometheus.service.type }}
+  ports:
+  - port: {{ .Values.monitoring.prometheus.service.port }}
+    targetPort: {{ .Values.monitoring.prometheus.service.port }}
+    protocol: TCP
+    name: http
+  selector:
+    {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: prometheus
+{{- end }} 

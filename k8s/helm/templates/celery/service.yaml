@@ -1,0 +1,20 @@
+{{- if .Values.celery.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-celery
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: celery
+spec:
+  type: ClusterIP
+  ports:
+  - port: 5555
+    targetPort: 5555
+    protocol: TCP
+    name: flower
+  selector:
+    {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: celery
+{{- end }} 

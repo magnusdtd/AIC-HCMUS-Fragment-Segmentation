@@ -1,0 +1,98 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-grafana-provisioning-datasources
+  namespace: {{ .Values.monitoring.namespace }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+data:
+  datasource.yml: |
+    apiVersion: 1
+    datasources:
+    - name: Prometheus
+      type: prometheus
+      url: http://{{ include "aic-hcmus-fragment-segmentation.name" . }}-prometheus:{{ .Values.monitoring.prometheus.service.port }}
+      access: proxy
+      isDefault: true
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-grafana-provisioning-dashboards
+  namespace: {{ .Values.monitoring.namespace }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+data:
+  dashboard.yml: |
+    apiVersion: 1
+    providers:
+    - name: 'default'
+      orgId: 1
+      folder: ''
+      type: file
+      disableDeletion: false
+      updateIntervalSeconds: 10
+      allowUiUpdates: true
+      options:
+        path: /var/lib/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-grafana-provisioning-alerting
+  namespace: {{ .Values.monitoring.namespace }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+data:
+  alertmanager.yml: |
+    apiVersion: 1
+    notifiers:
+    - name: email-notifications
+      type: email
+      uid: email1
+      org_id: 1
+      is_default: true
+      settings:
+        addresses: admin@example.com
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-grafana-dashboards
+  namespace: {{ .Values.monitoring.namespace }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: grafana
+data:
+  my_dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "AIC-HCMUS Fragment Segmentation",
+        "tags": ["aic-hcmus"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Application Overview",
+            "type": "stat",
+            "targets": [
+              {
+                "expr": "up{job=\"fastapi\"}",
+                "refId": "A"
+              }
+            ]
+          }
+        ],
+        "time": {
+          "from": "now-1h",
+          "to": "now"
+        },
+        "refresh": "5s"
+      }
+    }
+{{- end }} 

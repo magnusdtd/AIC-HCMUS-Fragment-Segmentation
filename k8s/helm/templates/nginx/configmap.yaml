@@ -1,0 +1,76 @@
+{{- if .Values.nginx.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-nginx-config
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nginx
+data:
+  nginx.conf: |
+    events {}
+
+    http {
+        client_max_body_size 10M;
+
+        upstream app_backend {
+            server {{ include "aic-hcmus-fragment-segmentation.name" . }}-backend:{{ .Values.backend.service.port }};
+        }
+
+        upstream frontend_backend {
+            server {{ include "aic-hcmus-fragment-segmentation.name" . }}-frontend:{{ .Values.frontend.service.port }};
+        }
+
+        server {
+            listen 80;
+            server_name _;
+            {{- if .Values.nginx.ssl.enabled }}
+            return 301 https://$host$request_uri;
+            {{- else }}
+            location / {
+                proxy_pass http://frontend_backend;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+
+            location /api/ {
+                proxy_pass http://app_backend/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+            {{- end }}
+        }
+
+        {{- if .Values.nginx.ssl.enabled }}
+        server {
+            listen 443 ssl;
+            server_name _;
+            ssl_certificate /etc/nginx/ssl/tls.crt;
+            ssl_certificate_key /etc/nginx/ssl/tls.key;
+            ssl_protocols TLSv1.2 TLSv1.3;
+            ssl_ciphers HIGH:!aNULL:!MD5;
+
+            location / {
+                proxy_pass http://frontend_backend;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+
+            location /api/ {
+                proxy_pass http://app_backend/;
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                proxy_set_header X-Forwarded-Proto $scheme;
+            }
+        }
+        {{- end }}
+    }
+{{- end }} 

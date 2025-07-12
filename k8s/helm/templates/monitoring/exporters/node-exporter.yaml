@@ -1,0 +1,77 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.exporters.nodeExporter.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-node-exporter
+  namespace: {{ .Values.monitoring.namespace }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: node-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: node-exporter
+  template:
+    metadata:
+      labels:
+        {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: node-exporter
+    spec:
+      containers:
+      - name: node-exporter
+        image: {{ .Values.monitoring.exporters.nodeExporter.image.repository }}:{{ .Values.monitoring.exporters.nodeExporter.image.tag }}
+        imagePullPolicy: {{ .Values.monitoring.exporters.nodeExporter.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.monitoring.exporters.nodeExporter.service.port }}
+          name: metrics
+        args:
+        - --path.procfs=/host/proc
+        - --path.sysfs=/host/sys
+        - --path.rootfs=/host/root
+        - --web.listen-address=:{{ .Values.monitoring.exporters.nodeExporter.service.port }}
+        volumeMounts:
+        - name: proc
+          mountPath: /host/proc
+          readOnly: true
+        - name: sys
+          mountPath: /host/sys
+          readOnly: true
+        - name: root
+          mountPath: /host/root
+          readOnly: true
+        resources:
+          {{- toYaml .Values.monitoring.exporters.nodeExporter.resources | nindent 10 }}
+      volumes:
+      - name: proc
+        hostPath:
+          path: /proc
+      - name: sys
+        hostPath:
+          path: /sys
+      - name: root
+        hostPath:
+          path: /
+      hostNetwork: true
+      hostPID: true
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-node-exporter
+  namespace: {{ .Values.monitoring.namespace }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: node-exporter
+spec:
+  type: {{ .Values.monitoring.exporters.nodeExporter.service.type }}
+  ports:
+  - port: {{ .Values.monitoring.exporters.nodeExporter.service.port }}
+    targetPort: {{ .Values.monitoring.exporters.nodeExporter.service.port }}
+    protocol: TCP
+    name: metrics
+  selector:
+    {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: node-exporter
+{{- end }} 

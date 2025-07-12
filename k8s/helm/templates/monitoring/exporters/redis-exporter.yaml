@@ -1,0 +1,69 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.exporters.redisExporter.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-redis-exporter
+  namespace: {{ .Values.monitoring.namespace }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: redis-exporter
+  template:
+    metadata:
+      labels:
+        {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: redis-exporter
+    spec:
+      containers:
+      - name: redis-exporter
+        image: {{ .Values.monitoring.exporters.redisExporter.image.repository }}:{{ .Values.monitoring.exporters.redisExporter.image.tag }}
+        imagePullPolicy: {{ .Values.monitoring.exporters.redisExporter.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.monitoring.exporters.redisExporter.service.port }}
+          name: metrics
+        env:
+        - name: REDIS_ADDR
+          value: "redis://{{ include "aic-hcmus-fragment-segmentation.name" . }}-redis:{{ .Values.redis.service.port }}"
+        resources:
+          {{- toYaml .Values.monitoring.exporters.redisExporter.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: {{ .Values.monitoring.exporters.redisExporter.service.port }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: {{ .Values.monitoring.exporters.redisExporter.service.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-redis-exporter
+  namespace: {{ .Values.monitoring.namespace }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis-exporter
+spec:
+  type: {{ .Values.monitoring.exporters.redisExporter.service.type }}
+  ports:
+  - port: {{ .Values.monitoring.exporters.redisExporter.service.port }}
+    targetPort: {{ .Values.monitoring.exporters.redisExporter.service.port }}
+    protocol: TCP
+    name: metrics
+  selector:
+    {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: redis-exporter
+{{- end }} 

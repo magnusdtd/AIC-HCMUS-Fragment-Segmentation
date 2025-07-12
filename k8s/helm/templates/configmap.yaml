@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-config
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+data:
+  BASE_URL: {{ .Values.backend.env.BASE_URL | quote }}
+  DATABASE_URL: {{ include "aic-hcmus-fragment-segmentation.databaseUrl" . | quote }}
+  MINIO_URL: {{ include "aic-hcmus-fragment-segmentation.minioUrl" . | quote }}
+  REDIS_URL: {{ include "aic-hcmus-fragment-segmentation.redisUrl" . | quote }} 
