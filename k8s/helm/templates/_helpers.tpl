@@ -56,19 +56,19 @@ Get the image name for a component
 Get the database URL
 */}}
 {{- define "aic-hcmus-fragment-segmentation.databaseUrl" -}}
-{{- printf "postgresql://%s:%s@%s:%d/%s" .Values.secrets.dbUser .Values.secrets.dbPassword "database" .Values.database.service.port .Values.database.auth.database }}
+{{- printf "postgresql://%s:%s@%s:%s/%s" .Values.secrets.dbUser .Values.secrets.dbPassword (printf "%s-database" (include "aic-hcmus-fragment-segmentation.name" .)) (.Values.database.service.port | toString) .Values.database.auth.database }}
 {{- end }}
 
 {{/*
 Get the Redis URL
 */}}
 {{- define "aic-hcmus-fragment-segmentation.redisUrl" -}}
-{{- printf "redis://%s:%d/0" "redis" .Values.redis.service.port }}
+{{- printf "redis://%s:%s/0" (printf "%s-redis" (include "aic-hcmus-fragment-segmentation.name" .)) (.Values.redis.service.port | toString) }}
 {{- end }}
 
 {{/*
 Get the MinIO URL
 */}}
 {{- define "aic-hcmus-fragment-segmentation.minioUrl" -}}
-{{- printf "http://%s:%d" "minio" .Values.minio.service.apiPort }}
+{{- printf "http://%s:%s" (printf "%s-minio" (include "aic-hcmus-fragment-segmentation.name" .)) (.Values.minio.service.apiPort | toString) }}
 {{- end }} 

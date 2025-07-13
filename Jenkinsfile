@@ -91,13 +91,23 @@ pipeline {
       steps {
         script {
           container('helm') {
+
+            // Load sensitive data from Jenkins credentials
             withCredentials([
-              string(credentialsId: env.GOOGLE_CLIENT_ID, variable: 'GOOGLE_CLIENT_ID'),
-              string(credentialsId: env.GOOGLE_CLIENT_SECRET, variable: 'GOOGLE_CLIENT_SECRET'),
-              string(credentialsId: env.SECRET_KEY, variable: 'SECRET_KEY'),
-              string(credentialsId: env.DB_PASSWORD, variable: 'DB_PASSWORD'),
-              string(credentialsId: env.MINIO_PASSWORD, variable: 'MINIO_PASSWORD')
+              string(credentialsId: env.GOOGLE_CLIENT_ID_CREDENTIAL, variable: 'GOOGLE_CLIENT_ID'),
+              string(credentialsId: env.GOOGLE_CLIENT_SECRET_CREDENTIAL, variable: 'GOOGLE_CLIENT_SECRET'),
+              string(credentialsId: env.SECRET_KEY_CREDENTIAL, variable: 'SECRET_KEY'),
+              string(credentialsId: env.DB_PASSWORD_CREDENTIAL, variable: 'DB_PASSWORD'),
+              string(credentialsId: env.MINIO_PASSWORD_CREDENTIAL, variable: 'MINIO_PASSWORD')
             ]) {
+              
+              // Store credentials in environment variables for later stages
+              env.GOOGLE_CLIENT_ID = GOOGLE_CLIENT_ID
+              env.GOOGLE_CLIENT_SECRET = GOOGLE_CLIENT_SECRET
+              env.SECRET_KEY = SECRET_KEY
+              env.DB_PASSWORD = DB_PASSWORD
+              env.MINIO_PASSWORD = MINIO_PASSWORD
+
               sh '''
                 echo "Starting Helm deployment..."
                 echo "Chart path: ./k8s/helm"
