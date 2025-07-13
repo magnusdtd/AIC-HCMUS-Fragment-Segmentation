@@ -30,7 +30,7 @@ backend:
       memory: 8Gi
   autoscaling:
     enabled: true
-    minReplicas: 3
+    minReplicas: 2
     maxReplicas: 15
     targetCPUUtilizationPercentage: 70
   env:
