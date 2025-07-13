@@ -64,13 +64,13 @@ spec:
             command: ["celery", "-A", "app.predict.tasks.celery_app", "status"]
           initialDelaySeconds: 30
           periodSeconds: 10
-          timeoutSeconds: 5
+          timeoutSeconds: 15
           failureThreshold: 3
         readinessProbe:
           exec:
             command: ["celery", "-A", "app.predict.tasks.celery_app", "status"]
           initialDelaySeconds: 5
           periodSeconds: 5
-          timeoutSeconds: 3
+          timeoutSeconds: 10
           failureThreshold: 3
 {{- end }} 

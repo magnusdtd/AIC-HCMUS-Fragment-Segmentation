@@ -8,15 +8,13 @@ from app.routers.display_img import display_img_router
 from app.routers.google_auth import router as google_auth_router
 from contextlib import asynccontextmanager
 from fastapi.responses import ORJSONResponse
-import os, anyio
+import os
 from prometheus_fastapi_instrumentator import Instrumentator
 from starlette.middleware.sessions import SessionMiddleware
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await create_db_and_tables()
-    limiter = anyio.to_thread.current_default_thread_limiter()
-    limiter.total_tokens = 1000
     yield
 
 app = FastAPI(lifespan=lifespan, default_response_class = ORJSONResponse)
@@ -36,6 +34,10 @@ app.add_middleware(
 
 # Initialize Prometheus metrics
 Instrumentator().instrument(app).expose(app)
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
 
 # Include auth routes, upload routes
 app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
