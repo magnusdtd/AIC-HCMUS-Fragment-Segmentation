@@ -26,8 +26,8 @@ backend:
       cpu: 500m
       memory: 1Gi
     limits:
-      cpu: 1000m
-      memory: 2Gi
+      cpu: 2000m
+      memory: 8Gi
   autoscaling:
     enabled: true
     minReplicas: 3
