@@ -7,8 +7,16 @@ pipeline {
   }
 
   environment {
-    DOCKER_IMAGE = 'magnusdtd/jenkins-practice-app'
-    DOCKER_FULL_IMAGE = "${DOCKER_IMAGE}:latest"
+    // Docker image names for the three services
+    BACKEND_IMAGE = 'magnusdtd/aic-hcmus-2025-backend'
+    FRONTEND_IMAGE = 'magnusdtd/aic-hcmus-2025-frontend'
+    CELERY_IMAGE = 'magnusdtd/aic-hcmus-2025-celery'
+    
+    // Full image names with latest tag
+    BACKEND_FULL_IMAGE = "${BACKEND_IMAGE}:latest"
+    FRONTEND_FULL_IMAGE = "${FRONTEND_IMAGE}:latest"
+    CELERY_FULL_IMAGE = "${CELERY_IMAGE}:latest"
+    
     DOCKER_REGISTRY_CREDENTIAL = 'dockerhub'
     
     // Credential IDs for sensitive data
@@ -21,8 +29,6 @@ pipeline {
 
   stages {
 
-
-
     stage('Run Tests') {
       steps {
         script {
@@ -33,24 +39,36 @@ pipeline {
       }
     }
 
-    stage('Build Docker Image') {
+    stage('Build Docker Images') {
       steps {
         script {
+          echo 'Building all Docker images...'
           sh 'docker compose build'
           sh 'docker images'
         }
       }
     }
 
-    stage('Push Docker Image') {
+    stage('Push Docker Images') {
       steps {
         script {
-            echo 'Pushing Docker image to the registry...'
-            docker.withRegistry('', DOCKER_REGISTRY_CREDENTIAL) {
-              docker.image("${DOCKER_FULL_IMAGE}").push()
-            }
+          echo 'Pushing Docker images to the registry...'
+          docker.withRegistry('', DOCKER_REGISTRY_CREDENTIAL) {
+            // Push backend image
+            echo "Pushing ${BACKEND_FULL_IMAGE}..."
+            docker.image("${BACKEND_FULL_IMAGE}").push()
+            
+            // Push frontend image
+            echo "Pushing ${FRONTEND_FULL_IMAGE}..."
+            docker.image("${FRONTEND_FULL_IMAGE}").push()
+            
+            // Push celery image
+            echo "Pushing ${CELERY_FULL_IMAGE}..."
+            docker.image("${CELERY_FULL_IMAGE}").push()
           }
+          echo 'All Docker images pushed successfully!'
         }
+      }
     }
 
     stage('Deploy to Google Kubernetes Engine') {
