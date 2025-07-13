@@ -42,12 +42,3 @@ app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
 app.include_router(predict_router, prefix="/api", tags=["predict"])
 app.include_router(display_img_router, prefix="/api", tags=["display_images"])
 app.include_router(google_auth_router, prefix="/api/auth", tags=["auth"])
-
-
-# Catch-all for React routes (SPA)
-@app.get("/{full_path:path}")
-def serve_spa(full_path: str):
-    path = f"app/build/{full_path}"
-    if os.path.exists(path):
-        return FileResponse(path)
-    return FileResponse("app/build/index.html")
