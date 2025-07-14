@@ -278,6 +278,23 @@ monitoring:
           cpu: 200m
           memory: 256Mi
 
+redisSession:
+  enabled: true
+  image:
+    repository: redis
+    tag: alpine
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 6380
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 400m
+      memory: 512Mi
+
 # Secrets configuration (should be overridden with actual production secrets)
 secrets:
   googleClientId: "793710439296-m5ufnjhel9fjmkc1g1ua4n6q3ip5hvc4.apps.googleusercontent.com"

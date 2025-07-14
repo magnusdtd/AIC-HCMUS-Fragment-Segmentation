@@ -9,4 +9,5 @@ data:
   BASE_URL: {{ .Values.backend.env.BASE_URL | quote }}
   DATABASE_URL: {{ include "aic-hcmus-fragment-segmentation.databaseUrl" . | quote }}
   MINIO_URL: {{ include "aic-hcmus-fragment-segmentation.minioUrl" . | quote }}
-  REDIS_URL: {{ include "aic-hcmus-fragment-segmentation.redisUrl" . | quote }} 
+  REDIS_URL: {{ include "aic-hcmus-fragment-segmentation.redisUrl" . | quote }}
+  REDIS_SESSION_URL: {{ include "aic-hcmus-fragment-segmentation.redisSessionUrl" . | quote }}

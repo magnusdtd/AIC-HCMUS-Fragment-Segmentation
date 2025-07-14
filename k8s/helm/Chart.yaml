@@ -11,8 +11,8 @@ keywords:
   - fastapi
   - react
 home: https://magnusdtd.github.io/AIC-HCMUS-Fragment-Segmentation
-sources:
-  - https://github.com/your-org/aic-hcmus-fragment-segmentation
+sources: 
+  - https://github.com/magnusdtd/AIC-HCMUS-Fragment-Segmentation
 maintainers:
   - name: AIC-HCMUS Team
     email: hcmus.nooobers@gmail.com

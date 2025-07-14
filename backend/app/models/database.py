@@ -18,7 +18,7 @@ def get_session():
 class User(SQLModel, table=True):
     id: int = Field(default=None, primary_key=True)
     username: str = Field(index=True, unique=True, nullable=False)
-    password: str = Field(nullable=False)
+    password: str | None = Field(nullable=True)
 
     google_id: str = Field(index=True, unique=True, nullable=True)  
     email: str = Field(index=True, unique=True, nullable=True)  

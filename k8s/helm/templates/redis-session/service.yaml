@@ -1,0 +1,20 @@
+{{- if .Values.redisSession.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-redis-session
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis-session
+spec:
+  type: {{ .Values.redisSession.service.type }}
+  ports:
+  - port: {{ .Values.redisSession.service.port }}
+    targetPort: {{ .Values.redisSession.service.port }}
+    protocol: TCP
+    name: redis
+  selector:
+    {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: redis-session
+{{- end }} 

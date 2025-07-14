@@ -13,6 +13,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      redis-session:
+        condition: service_healthy
     networks:
       - app_network
     environment:
@@ -25,6 +27,7 @@ services:
       GOOGLE_CLIENT_SECRET: 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
       SECRET_KEY: this_is_a_secret_key
       REDIS_URL: redis://redis:6379/0
+      REDIS_SESSION_URL: redis://redis-session:6380/0
 
   frontend:
     build:
@@ -182,9 +185,25 @@ services:
     networks:
       - app_network
 
+  redis-session:
+    image: redis:alpine
+    ports:
+      - "6380:6380"
+    command: ["redis-server", "--port", "6380"]
+    volumes:
+      - redis_session_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "6380", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - app_network
+
 volumes:
   postgres_data:
   minio_data:
+  redis_session_data:
 
 networks:
   app_network:

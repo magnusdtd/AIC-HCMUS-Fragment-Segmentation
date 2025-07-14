@@ -72,3 +72,10 @@ Get the MinIO URL
 {{- define "aic-hcmus-fragment-segmentation.minioUrl" -}}
 {{- printf "http://%s:%s" (printf "%s-minio" (include "aic-hcmus-fragment-segmentation.name" .)) (.Values.minio.service.apiPort | toString) }}
 {{- end }} 
+
+{{/*
+Get the Redis Session URL
+*/}}
+{{- define "aic-hcmus-fragment-segmentation.redisSessionUrl" -}}
+{{- printf "redis://%s-redis-session:%s/0" (include "aic-hcmus-fragment-segmentation.name" .) (.Values.redisSession.service.port | toString) }}
+{{- end }}
