@@ -20,10 +20,10 @@ class User(SQLModel, table=True):
     username: str = Field(index=True, unique=True, nullable=False)
     password: str | None = Field(nullable=True)
 
-    google_id: str = Field(index=True, unique=True, nullable=True)  
-    email: str = Field(index=True, unique=True, nullable=True)  
-    full_name: str = Field(nullable=True)  
-    profile_picture: str = Field(nullable=True) 
+    google_id: str | None = Field(index=True, unique=True, nullable=True)  
+    email: str | None = Field(index=True, unique=True, nullable=True)  
+    full_name: str | None = Field(nullable=True)  
+    profile_picture: str | None = Field(nullable=True) 
 
     images: list["ImageMetadata"] = Relationship(back_populates="user")
     tasks: list["UserTask"] = Relationship(back_populates="user")
