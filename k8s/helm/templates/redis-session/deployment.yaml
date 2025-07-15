@@ -21,23 +21,23 @@ spec:
     spec:
       containers:
       - name: redis
-        image: {{ .Values.redisSession.image.repository }}:{{ .Values.redisSession.image.tag }}
-        imagePullPolicy: {{ .Values.redisSession.image.pullPolicy }}
+        image: redis:alpine
+        command: ["redis-server", "--port", "6380"]
         ports:
-        - containerPort: {{ .Values.redisSession.service.port }}
+        - containerPort: 6380
           name: redis
         resources:
           {{- toYaml .Values.redisSession.resources | nindent 10 }}
         livenessProbe:
           exec:
-            command: ["redis-cli", "-p", "{{ .Values.redisSession.service.port }}", "ping"]
+            command: ["redis-cli", "-p", "6380", "ping"]
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
           exec:
-            command: ["redis-cli", "-p", "{{ .Values.redisSession.service.port }}", "ping"]
+            command: ["redis-cli", "-p", "6380", "ping"]
           initialDelaySeconds: 5
           periodSeconds: 5
           timeoutSeconds: 3

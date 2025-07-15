@@ -73,6 +73,11 @@ spec:
             configMapKeyRef:
               name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-config
               key: REDIS_URL
+        - name: REDIS_SESSION_URL
+          valueFrom:
+            configMapKeyRef:
+              name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-config
+              key: REDIS_SESSION_URL
         resources:
           {{- toYaml .Values.backend.resources | nindent 10 }}
         livenessProbe:

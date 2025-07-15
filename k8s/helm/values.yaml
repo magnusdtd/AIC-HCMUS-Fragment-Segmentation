@@ -68,7 +68,7 @@ celery:
       cpu: 500m
       memory: 1Gi
     limits:
-      cpu: 1000m
+      cpu: 2000m
       memory: 2Gi
   concurrency: 2
 
@@ -297,8 +297,8 @@ redisSession:
 
 # Secrets configuration (should be overridden with actual production secrets)
 secrets:
-  googleClientId: "271031008095-r37b0hc2aqkgq90nhurnl95v0as3b6ka.apps.googleusercontent.com"
-  googleClientSecret: "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"
+  googleClientId: "googleClientId"
+  googleClientSecret: "googleClientSecret"
   secretKey: "this_is_a_secret_key"
   dbUser: "user"
   dbPassword: "password"
