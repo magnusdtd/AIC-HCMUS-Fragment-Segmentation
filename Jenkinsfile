@@ -33,8 +33,7 @@ pipeline {
       steps {
         script {
           echo 'Running tests...'
-          // sh 'make install && make test'
-          // I will add testcases later
+          sh 'docker compose -f docker-compose.test.yml run --build --rm backend-test'
         }
       }
     }
@@ -110,9 +109,6 @@ pipeline {
 
               sh '''
                 echo "Starting Helm deployment..."
-                echo "Chart path: ./k8s/helm"
-                echo "Release name: aic-hcmus-prod"
-                echo "Namespace: aic-hcmus-app"
                 
                 # Check if namespace exists, create if it doesn't
                 kubectl get namespace aic-hcmus-app || kubectl create namespace aic-hcmus-app
