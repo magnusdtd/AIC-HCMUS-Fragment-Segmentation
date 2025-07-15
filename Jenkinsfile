@@ -42,7 +42,10 @@ pipeline {
       steps {
         script {
           echo 'Building all Docker images...'
-          sh 'docker compose build'
+          // Build frontend with production API base URL
+          sh 'docker build --build-arg VITE_API_BASE_URL=https://aic-hcmus-noobers.duckdns.org -t magnusdtd/aic-hcmus-2025-frontend:latest -f frontend/Dockerfile .'
+          // Build the other images
+          sh 'docker compose build app celery'
           sh 'docker images'
         }
       }
