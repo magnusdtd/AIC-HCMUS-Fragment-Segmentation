@@ -1,10 +1,10 @@
 from sqlmodel import SQLModel, Field, create_engine, Session, Relationship
 from datetime import datetime
 import os
-from pydantic import validator
+from pydantic import field_validator
 import re
 
-DATABASE_URL = os.getenv("DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL") or ""
 
 engine = create_engine(DATABASE_URL)
 
@@ -28,7 +28,7 @@ class User(SQLModel, table=True):
     images: list["ImageMetadata"] = Relationship(back_populates="user")
     tasks: list["UserTask"] = Relationship(back_populates="user")
 
-    @validator("username")
+    @field_validator("username")
     def validate_username(cls, value):
         if not (3 <= len(value) <= 50):
             raise ValueError("Username must be between 3 and 50 characters long.")
@@ -36,7 +36,7 @@ class User(SQLModel, table=True):
             raise ValueError("Username can only contain letters, numbers, and underscores.")
         return value
 
-    @validator("password")
+    @field_validator("password")
     def validate_password(cls, value):
         if len(value) < 6:
             raise ValueError("Password must be at least 6 characters long.")
@@ -51,7 +51,7 @@ class ImageMetadata(SQLModel, table=True):
     filename: str = Field(nullable=False)
     content_type: str = Field(nullable=False)
     size: int = Field(nullable=False)
-    upload_time: datetime = Field(default_factory=datetime.now())
+    upload_time: datetime = Field(default_factory=datetime.now)
     user_id: int = Field(foreign_key="user.id", nullable=False)  
 
     user: "User" = Relationship(back_populates="images")

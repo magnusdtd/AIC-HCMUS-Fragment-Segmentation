@@ -23,8 +23,8 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin
       MINIO_URL: http://minio:9000
       BASE_URL: https://localhost:443
-      GOOGLE_CLIENT_ID: 793710439296-m5ufnjhel9fjmkc1g1ua4n6q3ip5hvc4.apps.googleusercontent.com
-      GOOGLE_CLIENT_SECRET: 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
+      GOOGLE_CLIENT_ID: 271031008095-r37b0hc2aqkgq90nhurnl95v0as3b6ka.apps.googleusercontent.com
+      GOOGLE_CLIENT_SECRET: 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
       SECRET_KEY: this_is_a_secret_key
       REDIS_URL: redis://redis:6379/0
       REDIS_SESSION_URL: redis://redis-session:6380/0

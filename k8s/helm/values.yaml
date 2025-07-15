@@ -297,8 +297,8 @@ redisSession:
 
 # Secrets configuration (should be overridden with actual production secrets)
 secrets:
-  googleClientId: "793710439296-m5ufnjhel9fjmkc1g1ua4n6q3ip5hvc4.apps.googleusercontent.com"
-  googleClientSecret: "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"
+  googleClientId: "271031008095-r37b0hc2aqkgq90nhurnl95v0as3b6ka.apps.googleusercontent.com"
+  googleClientSecret: "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"
   secretKey: "this_is_a_secret_key"
   dbUser: "user"
   dbPassword: "password"
