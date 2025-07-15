@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import api from '../services/api';
 import ImageCard from './ImageCard';
 import ImageDetails from './ImageDetails';
+// @ts-ignore
+import { unzip } from 'unzipit';
 
 interface Image {
   filename: string;
@@ -38,11 +40,21 @@ function UserImages() {
               const imageResponse = await api.get(`/api/fetch_image/${image.filename}`, {
                 responseType: 'blob',
               });
-              const imageUrl = URL.createObjectURL(imageResponse.data); 
+              // Unzip the blob to get the image file
+              const zipBlob = imageResponse.data;
+              const { entries } = await unzip(zipBlob);
+              const entryNames = Object.keys(entries);
+              if (entryNames.length === 0) {
+                throw new Error('No entries found in zip');
+              }
+
+              const imageEntry = entries[entryNames[0]];
+              const imageBlob = await imageEntry.blob();
+              const imageUrl = URL.createObjectURL(imageBlob);
               return { ...image, url: imageUrl };
             } catch (err) {
-              console.error('Error fetching image blob:', err); 
-              return { ...image, url: '' }; 
+              console.error('Error fetching or unzipping image blob:', err);
+              return { ...image, url: '' };
             }
           })
         );
