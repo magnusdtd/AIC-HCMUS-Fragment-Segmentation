@@ -1,6 +1,6 @@
 import axios, { AxiosInstance, AxiosResponse } from "axios";
 
-const API_BASE_URL = "https://localhost:443";
+var API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,

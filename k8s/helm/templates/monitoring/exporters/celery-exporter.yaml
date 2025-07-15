@@ -1,0 +1,69 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.exporters.celeryExporter.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-celery-exporter
+  namespace: {{ .Values.monitoring.namespace }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: celery-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: celery-exporter
+  template:
+    metadata:
+      labels:
+        {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: celery-exporter
+    spec:
+      containers:
+      - name: celery-exporter
+        image: {{ .Values.monitoring.exporters.celeryExporter.image.repository }}:{{ .Values.monitoring.exporters.celeryExporter.image.tag }}
+        imagePullPolicy: {{ .Values.monitoring.exporters.celeryExporter.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.monitoring.exporters.celeryExporter.service.port }}
+          name: metrics
+        env:
+        - name: CE_BROKER_URL
+          value: "redis://{{ include "aic-hcmus-fragment-segmentation.name" . }}-redis.{{ .Values.namespace.name }}.svc.cluster.local:{{ .Values.redis.service.port }}/0"
+        resources:
+          {{- toYaml .Values.monitoring.exporters.celeryExporter.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /metrics
+            port: {{ .Values.monitoring.exporters.celeryExporter.service.port }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /metrics
+            port: {{ .Values.monitoring.exporters.celeryExporter.service.port }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-celery-exporter
+  namespace: {{ .Values.monitoring.namespace }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: celery-exporter
+spec:
+  type: {{ .Values.monitoring.exporters.celeryExporter.service.type }}
+  ports:
+  - port: {{ .Values.monitoring.exporters.celeryExporter.service.port }}
+    targetPort: {{ .Values.monitoring.exporters.celeryExporter.service.port }}
+    protocol: TCP
+    name: metrics
+  selector:
+    {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: celery-exporter
+{{- end }} 

@@ -27,18 +27,22 @@ class AuthRouter:
         if existing_user:
             raise HTTPException(status_code=400, detail="Username already exists")
 
-        hashed_password = pwd_context.hash(user.password)
+        hashed_password = pwd_context.hash(str(user.password))
         DatabaseService.create_user(db, user.username, hashed_password)
         return {"message": "User registered successfully."}
 
     def login(self, request: LoginRequest, db: Session = Depends(get_session)):
         user = DatabaseService.get_user_by_username(db, request.username)
+
+        if user is not None and user.google_id:
+            raise HTTPException(status_code=400, detail="Please log in with Google.")
+
         if not user or not pwd_context.verify(request.password, user.password):
             raise HTTPException(status_code=400, detail="Invalid username or password")
 
         access_token = manager.create_access_token(
             data={"sub": user.username},
-            expires=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+            expires=timedelta(minutes=float(ACCESS_TOKEN_EXPIRE_MINUTES)),
         )
         return {"access_token": access_token, "token_type": "bearer"}
 

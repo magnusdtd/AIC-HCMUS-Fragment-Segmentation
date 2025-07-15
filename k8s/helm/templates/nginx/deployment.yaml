@@ -1,0 +1,66 @@
+{{- if .Values.nginx.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-nginx
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: nginx
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: nginx
+  template:
+    metadata:
+      labels:
+        {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: {{ .Values.nginx.image.repository }}:{{ .Values.nginx.image.tag }}
+        imagePullPolicy: {{ .Values.nginx.image.pullPolicy }}
+        ports:
+        - containerPort: 80
+          name: http
+        - containerPort: 443
+          name: https
+        volumeMounts:
+        - name: nginx-config
+          mountPath: /etc/nginx/nginx.conf
+          subPath: nginx.conf
+        {{- if .Values.nginx.ssl.enabled }}
+        - name: nginx-ssl
+          mountPath: /etc/nginx/ssl
+        {{- end }}
+        resources:
+          {{- toYaml .Values.nginx.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: nginx-config
+        configMap:
+          name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-nginx-config
+      {{- if .Values.nginx.ssl.enabled }}
+      - name: nginx-ssl
+        secret:
+          secretName: {{ .Values.nginx.ssl.secretName }}
+      {{- end }}
+{{- end }} 

@@ -173,3 +173,7 @@ cython_debug/
 .pypirc
 
 nginx-ssl/
+iac/secrets/
+.terraform
+.terraform.*
+terraform.*

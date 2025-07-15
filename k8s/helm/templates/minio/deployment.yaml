@@ -1,0 +1,74 @@
+{{- if .Values.minio.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-minio
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: minio
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: minio
+  template:
+    metadata:
+      labels:
+        {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: minio
+    spec:
+      containers:
+      - name: minio
+        image: {{ .Values.minio.image.repository }}:{{ .Values.minio.image.tag }}
+        imagePullPolicy: {{ .Values.minio.image.pullPolicy }}
+        args:
+        - server
+        - /data
+        - --console-address
+        - ":{{ .Values.minio.service.consolePort }}"
+        env:
+        - name: MINIO_ROOT_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-secrets
+              key: MINIO_USER
+        - name: MINIO_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-secrets
+              key: MINIO_PASSWORD
+        - name: MINIO_PROMETHEUS_AUTH_TYPE
+          value: "public"
+        ports:
+        - containerPort: {{ .Values.minio.service.apiPort }}
+          name: api
+        - containerPort: {{ .Values.minio.service.consolePort }}
+          name: console
+        volumeMounts:
+        - name: minio-storage
+          mountPath: /data
+        resources:
+          {{- toYaml .Values.minio.resources | nindent 10 }}
+        livenessProbe:
+          httpGet:
+            path: /minio/health/live
+            port: {{ .Values.minio.service.apiPort }}
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /minio/health/ready
+            port: {{ .Values.minio.service.apiPort }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: minio-storage
+        persistentVolumeClaim:
+          claimName: {{ include "aic-hcmus-fragment-segmentation.name" . }}-minio-pvc
+{{- end }} 

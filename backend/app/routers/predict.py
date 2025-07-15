@@ -10,6 +10,7 @@ from PIL import Image
 import io, base64
 import zipfile
 import numpy as np
+import json
 
 class PredictRouter:
     def __init__(self):
@@ -17,14 +18,14 @@ class PredictRouter:
         self._setup_routes()
 
     def _setup_routes(self):
-        self.router.post('/upload')(self.upload_image)
-        self.router.post('/upload_predict/{real_radius}&{unit}&{conf}&{iou}')(self.upload_and_predict)
-        self.router.get('/task_status/{task_id}')(self.get_task_status)
-        self.router.get('/fetch_prediction/{task_id}')(self.fetch_prediction)
-        self.router.get('/get_user_tasks')(self.get_user_tasks)
-        self.router.get('/re_predict/{real_radius}&{img_name}&{unit}&{conf}&{iou}')(self.re_predict)
-        self.router.get('/get_prediction/{task_id}')(self.get_prediction)
-        self.router.get('/download_results/{task_id}')(self.download_results)
+        self.router.post('/upload')(self.upload_image)  
+        self.router.post('/upload_predict/{real_radius}&{unit}&{conf}&{iou}')(self.upload_and_predict) 
+        self.router.get('/task_status/{task_id}')(self.get_task_status) 
+        self.router.get('/fetch_prediction/{task_id}')(self.fetch_prediction) # N
+        self.router.get('/get_user_tasks')(self.get_user_tasks)  
+        self.router.get('/re_predict/{real_radius}&{img_name}&{unit}&{conf}&{iou}')(self.re_predict) 
+        self.router.get('/get_prediction/{task_id}')(self.get_prediction) # N
+        self.router.get('/download_results/{task_id}')(self.download_results) 
 
     async def _fetch_prediction_data(self, task_id: str, db: Session = Depends(get_session)):
 
@@ -83,6 +84,8 @@ class PredictRouter:
         try:
             username = current_user['user']
             user = DatabaseService.get_user_by_username(db, username)
+            if user is None:
+                raise HTTPException(status_code=404, detail="User not found")
             metadata = await DatabaseService.create_img_metadata(db, user, file)
             return {'message': 'File uploaded successfully', 'metadata': metadata}
         except Exception as e:
@@ -122,13 +125,28 @@ class PredictRouter:
                     conf=task_result.get('conf'),
                     iou=task_result.get('iou')
                 )
-                response = {
-                    'overlaid_image': task_result.get('overlaid_image'),
-                    'cdf_chart': task_result.get('cdf_chart'),
-                    'is_calibrated': task_result.get('is_calibrated')
-                }
+                # Prepare zip with overlaid_image, cdf_chart, is_calibrated
+                overlaid_image_b64 = task_result.get('overlaid_image')
+                cdf_chart_b64 = task_result.get('cdf_chart')
+                is_calibrated = task_result.get('is_calibrated')
+                
+                # Convert base64 to bytes
+                overlaid_image_bytes = base64.b64decode(overlaid_image_b64) if overlaid_image_b64 else b''
+                cdf_chart_bytes = base64.b64decode(cdf_chart_b64) if cdf_chart_b64 else b''
+                is_calibrated_json = json.dumps({'is_calibrated': is_calibrated}).encode('utf-8')
+                import io, zipfile
+                zip_buffer = io.BytesIO()
+                with zipfile.ZipFile(zip_buffer, "w") as zip_file:
+                    zip_file.writestr("overlaid_image.png", overlaid_image_bytes)
+                    zip_file.writestr("cdf_chart.png", cdf_chart_bytes)
+                    zip_file.writestr("is_calibrated.json", is_calibrated_json)
+                zip_buffer.seek(0)
                 result.forget()
-                return {'status': 'success', 'result': response}
+                return StreamingResponse(
+                    zip_buffer,
+                    media_type="application/zip",
+                    headers={"Content-Disposition": f"attachment; filename=results_{task_id}.zip"},
+                )
             elif result.state in ['PENDING', 'RETRY', 'FAILURE']:
                 return {'status': result.state}
             else:
@@ -176,29 +194,38 @@ class PredictRouter:
         
     async def get_prediction(self, task_id: str, db: Session = Depends(get_session), current_user: dict = Depends(AuthRouter.get_current_user)):
         try:
-
             prediction, masks, metrics, img = await self._fetch_prediction_data(task_id, db)
-            
-            overlaid_img = Model.get_overlaid_mask(image=img, masks=masks)
+            overlaid_image = Model.get_overlaid_mask(image=img, masks=masks)
             cdf_chart = Model.draw_cdf_chart(diameters=metrics, is_calibrated=prediction.is_calibrated, unit=prediction.unit)
 
-            buffer = io.BytesIO()
-            Image.fromarray(overlaid_img.astype(np.uint8)).save(buffer, format="PNG")
-            overlaid_img_b64 = base64.b64encode(buffer.getvalue()).decode("utf-8")
-
-            chart_buffer = io.BytesIO()
-            cdf_chart.save(chart_buffer, format="PNG")
-            cdf_chart_b64 = base64.b64encode(chart_buffer.getvalue()).decode("utf-8")
-
-            response = {
-                'overlaid_image': overlaid_img_b64,
-                'cdf_chart': cdf_chart_b64,
+            # Prepare is_calibrated as a JSON file, now including conf and iou
+            is_calibrated_json = json.dumps({
                 'is_calibrated': prediction.is_calibrated,
-                'unit': prediction.unit,
                 'conf': prediction.conf,
                 'iou': prediction.iou
-            }
-            return { 'status': 'success', 'result': response }
+            }).encode('utf-8')
+
+            # Prepare zip
+            overlaid_buffer = io.BytesIO()
+            Image.fromarray(overlaid_image.astype("uint8")).save(overlaid_buffer, format="PNG")
+            overlaid_buffer.seek(0)
+
+            cdf_buffer = io.BytesIO()
+            cdf_chart.save(cdf_buffer, format="PNG")
+            cdf_buffer.seek(0)
+
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, "w") as zip_file:
+                zip_file.writestr("overlaid_image.png", overlaid_buffer.getvalue())
+                zip_file.writestr("cdf_chart.png", cdf_buffer.getvalue())
+                zip_file.writestr("is_calibrated.json", is_calibrated_json)
+            zip_buffer.seek(0)
+
+            return StreamingResponse(
+                zip_buffer,
+                media_type="application/zip",
+                headers={"Content-Disposition": f"attachment; filename=results_{task_id}.zip"},
+            )
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
         

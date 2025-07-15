@@ -34,7 +34,7 @@ class Model:
         pass
 
     @staticmethod
-    def get_overlaid_mask(image: Image, masks: np.ndarray):  
+    def get_overlaid_mask(image: Image.Image, masks: np.ndarray):  
         image_array = np.array(image)
         if image_array.shape[-1] == 4: 
             image_array = image_array[:, :, :3]

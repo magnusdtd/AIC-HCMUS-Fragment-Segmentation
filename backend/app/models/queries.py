@@ -9,7 +9,14 @@ import numpy as np
 class DatabaseService:
     @staticmethod
     def create_user(db: Session, username: str, hashed_password: str) -> User:
-        db_user = User(username=username, password=hashed_password)
+        db_user = User(
+            username=username,
+            password=hashed_password,
+            google_id=None,
+            email=None,
+            full_name=None,
+            profile_picture=None
+        )
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
@@ -27,12 +34,12 @@ class DatabaseService:
             object_name=unique_filename,
             data=io.BytesIO(file_content),
             length=file_size,
-            content_type=file.content_type,
+            content_type=file.content_type or "application/octet-stream",
         )
 
         metadata = ImageMetadata(
             filename=unique_filename,
-            content_type=file.content_type,
+            content_type=file.content_type or "application/octet-stream",
             size=file_size,
             upload_time=datetime.now(),
             user_id=user.id
@@ -88,25 +95,20 @@ class DatabaseService:
         return prediction
 
     @staticmethod
-    def get_user_by_username(db: Session, username: str) -> User:
+    def get_user_by_username(db: Session, username: str) -> User | None:
         statement = select(User).where(User.username == username)
         return db.exec(statement).first()
 
     @staticmethod
-    def get_user_image_by_user_id(db: Session, user_id: str) -> list:
+    def get_user_image_by_user_id(db: Session, user_id: str) -> list[ImageMetadata]:
         statement = select(ImageMetadata).where(ImageMetadata.user_id == user_id)
         images = db.exec(statement).all()
-        return images
+        return list(images)
 
     @staticmethod
-    def get_img_metadata_by_id(db: Session, img_id: int) -> ImageMetadata:
+    def get_img_metadata_by_id(db: Session, img_id: int) -> ImageMetadata | None:
         statement = select(ImageMetadata).where(ImageMetadata.id == img_id)
         return db.exec(statement).first()
-
-    @staticmethod
-    def get_img_from_minio(filename: str) -> bytes:
-        img_response = minio_client.get_object(IMG_BUCKET, filename)
-        return img_response.read()
 
     @staticmethod
     def get_img_from_minio(filename: str) -> bytes:
@@ -128,15 +130,16 @@ class DatabaseService:
     @staticmethod
     def get_user_tasks_by_user_id(db: Session, user_id: int) -> list[UserTask]:
         statement = select(UserTask).where(UserTask.user_id == user_id)
-        return db.exec(statement).all()
+        tasks = db.exec(statement).all()
+        return list(tasks)
 
     @staticmethod
-    def get_user_task_by_id(db: Session, task_id: str) -> UserTask:
+    def get_user_task_by_id(db: Session, task_id: str) -> UserTask | None:
         statement = select(UserTask).where(UserTask.task_id == task_id)
         return db.exec(statement).first()
 
     @staticmethod
-    def get_prediction_by_task_id(db: Session, task_id: str) -> Prediction:
+    def get_prediction_by_task_id(db: Session, task_id: str) -> Prediction | None:
         statement = select(Prediction).where(Prediction.task_id == task_id)
         return db.exec(statement).first()
 
@@ -155,15 +158,28 @@ class DatabaseService:
 
     @staticmethod
     def get_user_tasks_by_img_id(db: Session, user_id: int, img_id: int):
-        return db.query(UserTask).filter(UserTask.user_id == user_id, UserTask.img_id == img_id).all()
+        statement = select(UserTask).where(
+            (UserTask.user_id == user_id) & (UserTask.img_id == img_id)
+        )
+        return db.exec(statement).all()
 
     @staticmethod
-    def get_img_metadata_by_name(db: Session, filename: str) -> ImageMetadata:
+    def get_img_metadata_by_name(db: Session, filename: str) -> ImageMetadata | None:
         statement = select(ImageMetadata).where(ImageMetadata.filename == filename)
         return db.exec(statement).first()
 
     @staticmethod
-    def get_img_id_by_task_id(db: Session, task_id: str) -> int:
+    def get_img_id_by_task_id(db: Session, task_id: str) -> int | None:
         statement = select(UserTask).where(UserTask.task_id == task_id)
         user_task = db.exec(statement).first()
         return user_task.img_id if user_task else None
+
+    @staticmethod
+    def get_image_filename_by_task_id(db: Session, task_id: str) -> str | None:
+        statement = (
+            select(ImageMetadata.filename)
+            .join(UserTask, ImageMetadata.id == UserTask.img_id)
+            .where(UserTask.task_id == task_id)
+        )
+        result = db.exec(statement).first()
+        return result

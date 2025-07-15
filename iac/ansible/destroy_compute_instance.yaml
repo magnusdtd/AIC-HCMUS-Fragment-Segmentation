@@ -1,0 +1,52 @@
+- name: Destroy Compute Engine instance and related resources
+  hosts: localhost
+  vars:
+    project_id: aic-hcmus-2025
+    zone: asia-southeast1-a
+    credentials_file: ./../secrets/aic-hcmus-2025-c3dca18c8b8a.json
+    instance_name: jenkins-server
+    disk_name: disk-instance
+    network_name: default
+
+  tasks:
+    - name: Delete compute instance
+      gcp_compute_instance:
+        name: "{{ instance_name }}"
+        zone: "{{ zone }}"
+        project: "{{ project_id }}"
+        auth_kind: serviceaccount
+        service_account_file: "{{ credentials_file }}"
+        state: absent
+      ignore_errors: yes
+
+    - name: Delete disk
+      gcp_compute_disk:
+        name: "{{ disk_name }}"
+        zone: "{{ zone }}"
+        project: "{{ project_id }}"
+        auth_kind: serviceaccount
+        service_account_file: "{{ credentials_file }}"
+        state: absent
+      ignore_errors: yes
+
+    - name: Delete firewall rule
+      gcp_compute_firewall:
+        name: allow-ssh-jenkins-ports
+        project: "{{ project_id }}"
+        auth_kind: serviceaccount
+        service_account_file: "{{ credentials_file }}"
+        state: absent
+      ignore_errors: yes
+
+    - name: Clean up inventory file
+      file:
+        path: ./inventory/inventory.ini
+        state: absent
+      ignore_errors: yes
+
+    - name: Recreate empty inventory file
+      lineinfile:
+        path: ./inventory/inventory.ini
+        line: "[jenkins]"
+        state: present
+        create: yes

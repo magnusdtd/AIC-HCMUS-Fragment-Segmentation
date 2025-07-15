@@ -1,0 +1,102 @@
+- name: Create a Compute Engine instance
+  hosts: localhost
+  vars:
+    project_id: aic-hcmus-2025
+    zone: asia-southeast1-a
+    credentials_file: ./../secrets/aic-hcmus-2025-c3dca18c8b8a.json
+    instance_name: jenkins-server
+    machine_type: n2-standard-2
+    disk_name: disk-instance
+    disk_size_gb: 50
+    network_name: default
+    source_image: projects/ubuntu-os-cloud/global/images/ubuntu-2204-jammy-v20230727
+    ssh_pub_key_file: ./../secrets/jenkins_key.pub
+    user_name: magnusdtd
+
+  tasks:
+    - name: Create inventory file structure
+      lineinfile:
+        path: ./inventory/inventory.ini
+        line: "[jenkins]"
+        state: present
+        create: yes
+
+    - name: Read SSH public key
+      ansible.builtin.slurp:
+        src: "{{ ssh_pub_key_file }}"
+      register: ssh_pub_key
+
+    - name: Create a disk
+      gcp_compute_disk:
+        name: "{{ disk_name }}"
+        size_gb: "{{ disk_size_gb }}"
+        source_image: "{{ source_image }}"
+        zone: "{{ zone }}"
+        project: "{{ project_id }}"
+        auth_kind: serviceaccount
+        service_account_file: "{{ credentials_file }}"
+        state: present
+      register: disk
+
+    - name: Start an instance
+      gcp_compute_instance:
+        name: "{{ instance_name }}"
+        machine_type: "{{ machine_type }}"
+        zone: "{{ zone }}"
+        project: "{{ project_id }}"
+        auth_kind: serviceaccount
+        service_account_file: "{{ credentials_file }}"
+        metadata:
+          ssh-keys: "{{ user_name }}:{{ ssh_pub_key['content'] | b64decode }}"
+        disks:
+          - auto_delete: true
+            boot: true
+            source: "{{ disk }}"
+          - auto_delete: true
+            interface: NVME
+            type: SCRATCH
+            initialize_params:
+              disk_type: local-ssd
+        network_interfaces:
+          - network:
+              selfLink: "global/networks/{{ network_name }}"
+            access_configs:
+              - name: External NAT
+                type: ONE_TO_ONE_NAT
+        state: present
+      register: instance
+
+    - name: Wait for instance to be ready
+      wait_for:
+        host: "{{ instance.networkInterfaces[0].accessConfigs[0].natIP }}"
+        port: 22
+        delay: 30
+        timeout: 300
+      when: instance is defined
+
+    - name: Update inventory file with instance IP
+      lineinfile:
+        path: ./inventory/inventory.ini
+        line: "{{ instance.networkInterfaces[0].accessConfigs[0].natIP }} ansible_user={{ user_name }} ansible_ssh_private_key_file=./secrets/jenkins_key"
+        regexp: "^.*ansible_user=.*$"
+        state: present
+      when: instance is defined
+
+    - name: Create inbound firewall rule for SSH, Jenkins ports
+      gcp_compute_firewall:
+        name: allow-ssh-jenkins-ports
+        network:
+          selfLink: "global/networks/{{ network_name }}"
+        allowed:
+          - ip_protocol: TCP
+            ports:
+              - 22
+              - 8080
+              - 50000
+        source_ranges:
+          - 0.0.0.0/0
+        direction: INGRESS
+        description: Allow incoming traffic on SSH (22), Jenkins UI (8080) and agent (50000)
+        project: "{{ project_id }}"
+        auth_kind: serviceaccount
+        service_account_file: "{{ credentials_file }}"

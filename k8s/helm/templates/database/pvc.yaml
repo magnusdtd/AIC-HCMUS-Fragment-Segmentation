@@ -1,0 +1,17 @@
+{{- if and .Values.database.enabled .Values.database.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-database-pvc
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  storageClassName: {{ .Values.database.persistence.storageClass }}
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.database.persistence.size }}
+{{- end }} 

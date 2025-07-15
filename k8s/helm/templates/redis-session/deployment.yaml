@@ -1,0 +1,45 @@
+{{- if .Values.redisSession.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-redis-session
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis-session
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: redis-session
+  template:
+    metadata:
+      labels:
+        {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: redis-session
+    spec:
+      containers:
+      - name: redis
+        image: redis:alpine
+        command: ["redis-server", "--port", "6380"]
+        ports:
+        - containerPort: 6380
+          name: redis
+        resources:
+          {{- toYaml .Values.redisSession.resources | nindent 10 }}
+        livenessProbe:
+          exec:
+            command: ["redis-cli", "-p", "6380", "ping"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command: ["redis-cli", "-p", "6380", "ping"]
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+{{- end }} 

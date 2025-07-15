@@ -1,0 +1,67 @@
+{{- if .Values.database.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-database
+  namespace: {{ .Values.namespace.name }}
+  labels:
+    {{- include "aic-hcmus-fragment-segmentation.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: database
+  template:
+    metadata:
+      labels:
+        {{- include "aic-hcmus-fragment-segmentation.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: database
+    spec:
+      containers:
+      - name: postgres
+        image: {{ .Values.database.image.repository }}:{{ .Values.database.image.tag }}
+        imagePullPolicy: {{ .Values.database.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.database.service.port }}
+          name: postgresql
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-secrets
+              key: DB_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "aic-hcmus-fragment-segmentation.name" . }}-secrets
+              key: DB_PASSWORD
+        - name: POSTGRES_DB
+          value: {{ .Values.database.auth.database | quote }}
+        - name: PGDATA
+          value: "/var/lib/postgresql/data/pgdata"
+        volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+        resources:
+          {{- toYaml .Values.database.resources | nindent 10 }}
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", "{{ .Values.database.auth.username }}", "-d", "{{ .Values.database.auth.database }}"]
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "{{ .Values.database.auth.username }}", "-d", "{{ .Values.database.auth.database }}"]
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: postgres-storage
+        persistentVolumeClaim:
+          claimName: {{ include "aic-hcmus-fragment-segmentation.name" . }}-database-pvc
+{{- end }} 

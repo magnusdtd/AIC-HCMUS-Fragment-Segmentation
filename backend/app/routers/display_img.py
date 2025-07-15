@@ -4,6 +4,8 @@ from app.models.queries import DatabaseService
 from app.routers.auth import AuthRouter
 from sqlmodel import Session
 from mimetypes import guess_type
+import io
+import zipfile
 
 class DisplayImageRouter:
     def __init__(self):
@@ -18,7 +20,7 @@ class DisplayImageRouter:
     def get_user_images(self, db: Session = Depends(get_session), current_user: User = Depends(AuthRouter.get_current_user)):
         print("Inside get_user_images function, current user is ", current_user)
         try:
-            images = DatabaseService.get_user_image_by_user_id(db, current_user.id)
+            images = DatabaseService.get_user_image_by_user_id(db, str(current_user.id))
             result = {
                 "images": [
                     {
@@ -40,11 +42,15 @@ class DisplayImageRouter:
             if image_data is None:
                 raise HTTPException(status_code=404, detail="Image not found")
 
-            mime_type, _ = guess_type(filename)
-            if not mime_type:
-                mime_type = "application/octet-stream"
+            # Create an in-memory zip file
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                zip_file.writestr(filename, image_data)
+            zip_buffer.seek(0)
 
-            result = Response(content=image_data, media_type=mime_type)
+            # Set the response headers for a zip file
+            result = Response(content=zip_buffer.read(), media_type="application/zip")
+            result.headers["Content-Disposition"] = f"attachment; filename={filename}.zip"
             return result
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Error fetching image: {e}")
