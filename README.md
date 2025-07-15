@@ -1,16 +1,25 @@
 # AIC-HCMUS Fragment Segmentation Application Summary
 
-## Overview
+## ✨ New Features
+
+- 🏗️ **Infrastructure as Code (IaC):** Automated provisioning and management using **Terraform** and **Ansible**.
+- 🔄 **CI/CD with Jenkins:** Switched from GitHub Actions to **Jenkins** for continuous integration and deployment.
+- 🗄️ **Redis Session Storage:** Added a dedicated **Redis** instance for session storage, enabling seamless horizontal scaling.
+- 🚀 **Helm Chart Deployment:** Deploy the entire stack to **Google Kubernetes Engine (GKE)** using a custom **Helm Chart**.
+
+---
+
+## 🗂️ Overview
 This application is a full-stack solution for fragment segmentation, built for the HCMUS AI Challenge. It includes a **React frontend**, a **FastAPI backend**, and supporting services like **PostgreSQL**, **MinIO**, **Celery worker**, **Redis**, and **NGINX**. **Grafana** and **Prometheus** have been added to this app for observation and alerting to Discord. The application is containerized using **Docker** and orchestrated with **Kubernetes** for deployment. This project contains a pipeline to automatically deploy the app to Google Kubernetes Engine (GKE).
 
 ---
 
-## System Architecture
+## 🏛️ System Architecture
 ![App Architecture](frontend/public/app-architecture.jpg)
 
 ---
 
-## Folder Structure
+## 📁 Folder Structure
 ```
 .
 ├── backend              # Backend, built with FastAPI
@@ -36,68 +45,79 @@ This application is a full-stack solution for fragment segmentation, built for t
 
 ---
 
-## Key Features
-1. **Frontend**:
-   - Built with **React** and **TypeScript**.
-   - Uses **TailwindCSS** for styling.
-   - Implements **React Router** for navigation.
-   - Provides manual user authentication (login/register) and OAuth2 to use Google Account for login.
-   - Allows users to upload images, view predictions, and visualize results (e.g., overlaid masks, **Equivalent Diameter (ED)** chart).
-   - Users can see their previous images and download them.
+## 🌟 Key Features
+1. 🖥️ **Frontend**:
+   - ⚛️ Built with **React** and **TypeScript**.
+   - 🎨 Uses **TailwindCSS** for styling.
+   - 🧭 Implements **React Router** for navigation.
+   - 🔐 Provides manual user authentication (login/register) and OAuth2 to use Google Account for login.
+   - 🖼️ Allows users to upload images, view predictions, and visualize results (e.g., overlaid masks, **Equivalent Diameter (ED)** chart).
+   - 📂 Users can see their previous images and download them.
 
-2. **Backend**:
-   - Built with **FastAPI**.
-   - Handles user authentication with JWT tokens.
-   - Provides endpoints for image upload, prediction, and fetching results.
-   - Integrates with **YOLOv11m** for segmentation and particle size calculation.
-   - Stores metadata and predictions in **PostgreSQL**.
-   - Uses **MinIO** for object storage (e.g., images, binary masks).
-   - Uses **Celery** for asynchronous task processing (e.g., running predictions in the background) with **Redis** as the message broker.
-   - **Prometheus** is used for monitoring metrics.
-   - **Grafana** is used for dashboard visualization and alerting.
-   - **Grafana alerts** are configured to send notifications to **Discord**.
+2. 🖧 **Backend**:
+   - ⚡ Built with **FastAPI**.
+   - 🔑 Handles user authentication with JWT tokens.
+   - 📤 Provides endpoints for image upload, prediction, and fetching results.
+   - 🤖 Integrates with **YOLOv11m** for segmentation and particle size calculation.
+   - 🗃️ Stores metadata and predictions in **PostgreSQL**.
+   - 🗄️ Uses **MinIO** for object storage (e.g., images, binary masks).
+   - 🕒 Uses **Celery** for asynchronous task processing (e.g., running predictions in the background) with **Redis** as the message broker.
+   - 📈 **Prometheus** is used for monitoring metrics.
+   - 📊 **Grafana** is used for dashboard visualization and alerting.
+   - 🔔 **Grafana alerts** are configured to send notifications to **Discord**.
 
-3. **Machine Learning**:
-   - The app uses a YOLOv11m segmentation model. This model has been fine-tuned on the Rock Fragment Dataset. The backend will download it from [Hugging Face](https://huggingface.co/magnusdtd/aic-hcmus-2025-yolo11m-seg).
-   - Detects calibration objects (red balls) to convert pixel values to real-world values.
-   - Generates overlaid masks and draws a CDF chart of the ED distribution.
+3. 🧠 **Machine Learning**:
+   - 🦾 The app uses a YOLOv11m segmentation model. This model has been fine-tuned on the Rock Fragment Dataset. The backend will download it from [Hugging Face](https://huggingface.co/magnusdtd/aic-hcmus-2025-yolo11m-seg).
+   - 🎯 Detects calibration objects (red balls) to convert pixel values to real-world values.
+   - 🖌️ Generates overlaid masks and draws a CDF chart of the ED distribution.
 
-4. **Infrastructure**:
-   - **Docker Compose** for local development.
-   - **Kubernetes** manifests for deployment (app, PostgreSQL, MinIO, NGINX).
-   - CI/CD pipeline using **GitHub Actions** to build and deploy to **Google Kubernetes Engine (GKE)**.
-   - Uses a Celery worker and **Redis** as the message broker for task queuing.
-   - **Prometheus** and **Grafana** for monitoring and alerting.
-   - **DuckDNS** is used to provide a public domain for accessing the application after deployment on Google Cloud.
+4. 🏗️ **Infrastructure**:
+   - 🐳 **Docker Compose** for local development.
+   - ☸️ **Kubernetes** manifests for deployment (app, PostgreSQL, MinIO, NGINX).
+   - 🔄 CI/CD pipeline using **GitHub Actions** to build and deploy to **Google Kubernetes Engine (GKE)**.
+   - 🕒 Uses a Celery worker and **Redis** as the message broker for task queuing.
+   - 📈 **Prometheus** and **Grafana** for monitoring and alerting.
+   - 🦆 **DuckDNS** is used to provide a public domain for accessing the application after deployment on Google Cloud.
 
 ---
 
-## Deployment Workflow
-1. **Local Development**:
+## 🚀 Deployment Workflow
+1. 🛠️ **Local Development**:
    - Use `docker-compose.yml` to spin up services locally.
    - The app runs on `https://localhost:443`.
 
-2. **CI/CD Pipeline**:
+2. 🔄 **CI/CD Pipeline**:
    - Triggered on `deploy` branch push.
    - Builds Docker images and pushes them to **Google Container Registry (GCR)**.
    - Deploys to **Google Kubernetes Engine (GKE)** using Kubernetes manifests.
 
-3. **Production Deployment**:
+3. 🌐 **Production Deployment**:
    - The app services are deployed in the `aic-hcmus-app` namespace, and the monitoring services are deployed in the `aic-hcmus-monitor` namespace.
-   - NGINX serves as a reverse proxy and load balancer for the frontend and backend.
+   - 🕸️ NGINX serves as a reverse proxy and load balancer for the frontend and backend.
 
 ---
 
-## Technologies Used
-- **Frontend**: React, TypeScript, TailwindCSS, Vite.
-- **Backend**: FastAPI, SQLModel, MinIO, YOLOv11m-seg, Celery.
-- **Database**: PostgreSQL.
-- **S3 Storage**: MinIO.
-- **Task Queue**: Celery with Redis as the message broker.
-- **Containerization**: Docker.
-- **Orchestration**: Kubernetes.
-- **CI/CD**: GitHub Actions.
-- **Cloud**: Google Kubernetes Engine (GKE).
+## 🛠️ System Setup Guide
+
+To set up the entire system:
+
+1. 📖 **Follow the [IaC Readme](iac/Readme.md)** for infrastructure provisioning, Jenkins setup, and prerequisites.
+2. 📖 **Then follow the [Helm Chart Readme](k8s/helm/README.md)** for application deployment and configuration on Kubernetes.
+
+These files contain all the detailed, up-to-date instructions for a successful deployment.
+
+---
+
+## 🛠️ Technologies Used
+- **Frontend**: ⚛️ React, 🟦 TypeScript, 🎨 TailwindCSS, ⚡ Vite.
+- **Backend**: ⚡ FastAPI, 🟦 SQLModel, 🗄️ MinIO, 🤖 YOLOv11m-seg, 🕒 Celery.
+- **Database**: 🐘 PostgreSQL.
+- **S3 Storage**: 🗄️ MinIO.
+- **Task Queue**: 🕒 Celery with 🟥 Redis as the message broker.
+- **Containerization**: 🐳 Docker.
+- **Orchestration**: ☸️ Kubernetes.
+- **CI/CD**: 🔄 GitHub Actions.
+- **Cloud**: ☁️ Google Kubernetes Engine (GKE).
 
 ---
 For more details about this application, please read the [documentation page](https://magnusdtd.github.io/AIC-HCMUS-Fragment-Segmentation/).
